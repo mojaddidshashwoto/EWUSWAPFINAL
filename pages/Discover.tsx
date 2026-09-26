@@ -140,7 +140,7 @@ const SAMPLE_LISTINGS: (SkillCardProps & {
   },
 ];
 
-const CATEGORIES = ["All", "Design", "Technology", "Marketing", "Wellness", "Languages"];
+const CATEGORIES = ["All", "Arts", "Business", "Career", "Design", "Finance", "Languages", "Marketing", "Music", "Photography", "Productivity", "Science", "Technology", "Wellness", "Writing"];
 
 export default function Discover() {
   const [, setLocation] = useLocation();
@@ -151,7 +151,7 @@ export default function Discover() {
   const [serviceTitle, setServiceTitle] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
   const [serviceCategory, setServiceCategory] = useState("Design");
-  const [servicePriceBdt, setServicePriceBdt] = useState("1200");
+  const [servicePriceCredits, setServicePriceCredits] = useState("10");
   const [serviceDuration, setServiceDuration] = useState("60");
 
   // Search & Filter States
@@ -235,14 +235,14 @@ export default function Discover() {
 
   const handlePublishService = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const priceBdt = Number(servicePriceBdt);
+    const priceCredits = Number(servicePriceCredits);
     const durationMinutes = Number(serviceDuration);
     if (serviceTitle.trim().length < 8 || serviceDescription.trim().length < 20) {
       toast.error("Use a title of at least 8 characters and a description of at least 20 characters.");
       return;
     }
-    if (!Number.isFinite(priceBdt) || priceBdt < 240 || !Number.isInteger(durationMinutes) || durationMinutes < 15) {
-      toast.error("Set a price of at least ৳240 and a session duration of at least 15 minutes.");
+    if (!Number.isInteger(priceCredits) || priceCredits < 2 || !Number.isInteger(durationMinutes) || durationMinutes < 15) {
+      toast.error("Set a whole-number price of at least 2 credits and a session duration of at least 15 minutes.");
       return;
     }
 
@@ -257,7 +257,7 @@ export default function Discover() {
         learningGoals: [],
         durationMinutes,
         availability: "available",
-        priceBdt,
+        priceCredits,
       });
       await refreshPublishedListings();
       setIsPublishOpen(false);
@@ -565,13 +565,14 @@ export default function Discover() {
                 <Select value={serviceCategory} onValueChange={setServiceCategory}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {["Design", "Technology", "Marketing", "Wellness"].map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}
+                    {CATEGORIES.filter((category) => category !== "All").map((category) => <SelectItem key={category} value={category}>{category}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="service-price">Price (BDT)</Label>
-                <Input id="service-price" type="number" min="240" step="120" value={servicePriceBdt} onChange={(event) => setServicePriceBdt(event.target.value)} required />
+                <Label htmlFor="service-price">Price (credits)</Label>
+                <Input id="service-price" type="number" min="2" step="1" value={servicePriceCredits} onChange={(event) => setServicePriceCredits(event.target.value)} required />
+                <p className="text-xs text-slate-500">BDT equivalent: ৳{(Number(servicePriceCredits) * 120 || 0).toLocaleString()}</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="service-duration">Duration (minutes)</Label>

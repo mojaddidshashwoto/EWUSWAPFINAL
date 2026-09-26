@@ -24,6 +24,27 @@ export type SkillSwapListingInput = {
   durationMinutes: number;
   availability: string;
   priceBdt?: number | null;
+  priceCredits?: number | null;
+};
+
+export type GroupLearningSession = {
+  id: string;
+  groupId: string;
+  hostId: string;
+  title: string;
+  category: string;
+  description: string;
+  learningOutcomes: string;
+  startsAt: string;
+  endsAt: string;
+  creditCost: number;
+  maxStudents: number;
+  enrolledStudents: number;
+  hostName: string;
+  hostAvatar: string;
+  isVerified: boolean;
+  isOwner: boolean;
+  isJoined: boolean;
 };
 
 export type ProfileDetails = {
@@ -423,8 +444,9 @@ export async function createSkillSwapListing(input: SkillSwapListingInput) {
   if (input.exchangeType !== "paid") {
     throw new Error("Free skill swaps do not use the paid-course escrow flow yet.");
   }
-  if (!input.priceBdt || input.priceBdt <= 0) {
-    throw new Error("Add a service price before publishing.");
+  const creditCost = input.priceCredits ?? (input.priceBdt ? Math.ceil(input.priceBdt / 120) : 0);
+  if (!Number.isInteger(creditCost) || creditCost < 2) {
+    throw new Error("Set a service price of at least 2 credits.");
   }
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -452,12 +474,92 @@ export async function createSkillSwapListing(input: SkillSwapListingInput) {
       type: "service",
       status: "published",
       duration_minutes: input.durationMinutes,
-      credit_cost: Math.max(2, Math.ceil(input.priceBdt / 120)),
+      credit_cost: creditCost,
     })
     .select("id, title, description, type, duration_minutes, credit_cost, created_at")
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function listGroupLearningSessions(): Promise<GroupLearningSession[]> {
+  const { data, error } = await supabase.rpc("ss_list_group_sessions");
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: row.session_id,
+    groupId: row.group_id,
+    hostId: row.host_id,
+    title: row.title,
+    category: row.category,
+    description: row.description ?? "",
+    learningOutcomes: row.learning_outcomes ?? "",
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    creditCost: Number(row.credit_cost),
+    maxStudents: Number(row.max_students),
+    enrolledStudents: Number(row.enrolled_students),
+    hostName: row.host_name,
+    hostAvatar: row.host_avatar ?? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
+    isVerified: Boolean(row.is_verified),
+    isOwner: Boolean(row.is_owner),
+    isJoined: Boolean(row.is_joined),
+  }));
+}
+
+export async function createGroupLearningSession(input: {
+  title: string;
+  description: string;
+  learningOutcomes: string;
+  categorySlug: string;
+  startsAt: string;
+  endsAt: string;
+  creditCost: number;
+  maxStudents: number;
+}) {
+  const { data, error } = await supabase.rpc("ss_create_group_session", {
+    p_title: input.title,
+    p_description: input.description,
+    p_learning_outcomes: input.learningOutcomes,
+    p_category_slug: input.categorySlug,
+    p_starts_at: input.startsAt,
+    p_ends_at: input.endsAt,
+    p_credit_cost: input.creditCost,
+    p_max_students: input.maxStudents,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function joinGroupLearningSession(sessionId: string, join: boolean) {
+  const { error } = await supabase.rpc("ss_join_group_session", {
+    p_session_id: sessionId,
+    p_join: join,
+  });
+  if (error) throw error;
+}
+
+export async function updateGroupLearningSession(sessionId: string, input: {
+  title: string;
+  description: string;
+  learningOutcomes: string;
+  categorySlug: string;
+  startsAt: string;
+  endsAt: string;
+  creditCost: number;
+  maxStudents: number;
+}) {
+  const { error } = await supabase.rpc("ss_update_group_session", {
+    p_session_id: sessionId,
+    p_title: input.title,
+    p_description: input.description,
+    p_learning_outcomes: input.learningOutcomes,
+    p_category_slug: input.categorySlug,
+    p_starts_at: input.startsAt,
+    p_ends_at: input.endsAt,
+    p_credit_cost: input.creditCost,
+    p_max_students: input.maxStudents,
+  });
+  if (error) throw error;
 }
 
 export async function submitVerificationRequest(data: any) {
