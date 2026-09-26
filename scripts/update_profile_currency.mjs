@@ -1,0 +1,18 @@
+import fs from "node:fs";
+const path = "client/src/pages/Home.tsx";
+let s = fs.readFileSync(path, "utf8");
+s = s.replace("updateProfileEmail, updateProfileName, updateProfilePrivacy, updateCallStatus, uploadProfileAvatar,", "updateProfileDetails, updateProfileEmail, updateProfileName, updateProfilePrivacy, updateCallStatus, uploadProfileAvatar,");
+s = s.replace('function Stars({ value, size = 13 }', 'function formatTaka(value: number) { return `৳${Math.round(value * 120).toLocaleString("en-BD")}`; }\nfunction Stars({ value, size = 13 }');
+s = s.replace('currency: "USD"', 'currency: "BDT"');
+s = s.replace('currency: "USD" | "credits"', 'currency: "BDT" | "credits"');
+s = s.replace('const [profileEmail, setProfileEmail] = useState("mojaddid@example.com");', 'const [profileEmail, setProfileEmail] = useState("mojaddid@example.com");\n  const [profileBio, setProfileBio] = useState("Curious generalist who loves turning messy ideas into useful learning loops.");\n  const [profileEducation, setProfileEducation] = useState("BSc in Computer Science · University of Dhaka");\n  const [profileSkills, setProfileSkills] = useState("Product design, data storytelling, facilitation");\n  const [profileCertifications, setProfileCertifications] = useState("Google UX Design Certificate · 2025");');
+s = s.replace('await Promise.all([updateProfileName(nextName), updateProfileEmail(nextEmail), updateProfilePrivacy(profileVisibility)]);', 'await Promise.all([updateProfileDetails({ displayName: nextName, bio: profileBio, education: profileEducation, skills: profileSkills, certifications: profileCertifications }), updateProfileEmail(nextEmail), updateProfilePrivacy(profileVisibility)]);');
+s = s.replace('`$${selectedListing.price} held in escrow · $${fee.toFixed(2)} platform protection fee.`', '`Displayed as ${formatTaka(selectedListing.price)} held in escrow · ${formatTaka(fee)} platform protection fee.`');
+s = s.replace('`${listing.provider} · $${listing.price} or ${listing.credits} credits`', '`${listing.provider} · ${formatTaka(listing.price)} or ${listing.credits} credits`');
+s = s.replace('`$${listing.price} · ${listing.credits} cr`', '`${formatTaka(listing.price)} · ${listing.credits} cr`');
+s = s.replace('payment.currency === "USD" ? `$${payment.amount}` : `${payment.amount} credits`', 'payment.currency === "BDT" ? formatTaka(payment.amount) : `${payment.amount} credits`');
+s = s.replace('Pay $${selectedListing.price}', 'Pay {formatTaka(selectedListing.price)}');
+s = s.replace('<strong>${(selectedListing.price * .05).toFixed(2)}</strong>', '<strong>{formatTaka(selectedListing.price * .05)}</strong>');
+s = s.replace('`$${selectedListing.price} held in escrow', '`${formatTaka(selectedListing.price)} held in escrow');
+s = s.replace('<label className="field-label">Email address', '<label className="field-label field-label-wide">Bio <textarea value={profileBio} onChange={(event) => setProfileBio(event.target.value)} placeholder="Tell learners what you enjoy teaching and learning." rows={3} /><small>A short introduction helps people find the right learning match.</small></label><label className="field-label">Education <input value={profileEducation} onChange={(event) => setProfileEducation(event.target.value)} placeholder="Degree, school, or learning path" /></label><label className="field-label">Skills <input value={profileSkills} onChange={(event) => setProfileSkills(event.target.value)} placeholder="Separate skills with commas" /></label><label className="field-label">Certifications <input value={profileCertifications} onChange={(event) => setProfileCertifications(event.target.value)} placeholder="Certificate or credential" /></label><label className="field-label">Email address');
+fs.writeFileSync(path, s);

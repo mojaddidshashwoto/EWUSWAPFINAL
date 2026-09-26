@@ -1,0 +1,8 @@
+import fs from "node:fs";
+const path = "client/src/pages/Home.tsx";
+let s = fs.readFileSync(path, "utf8");
+const hero = '<section className="hero-row"><div><div className="breadcrumb"><span className="breadcrumb-dot" /> Monday, September 25, 2026</div><h1 className="page-title">Good morning, {profileName.split(" ").slice(-1)[0]}<span className="title-accent">.</span></h1><p className="page-subtitle">Your learning loop is in motion. Keep the momentum going.</p></div><button className="offer-button" onClick={() => openCheckout(listings[0])}><Sparkles size={16} />Offer or buy a skill</button></section>';
+const quick = '<div className="mobile-quick-actions" aria-label="Essential actions"><button onClick={() => go("Discover")}><Sparkles size={15} /><span><strong>Find a skill</strong><small>Courses & services</small></span><ChevronRight size={14} /></button><button onClick={() => go("Sessions")}><CalendarDays size={15} /><span><strong>Next session</strong><small>Tomorrow, 4:30 PM</small></span><ChevronRight size={14} /></button><button onClick={() => go("Wallet")}><WalletCards size={15} /><span><strong>Wallet</strong><small>{heldTotal} held securely</small></span><ChevronRight size={14} /></button></div>';
+s = s.replace(hero, `${hero}\n    ${quick}`);
+s = s.replace('<p className="muted-copy">72% complete · Due Oct 08</p>', '<p className="muted-copy">72% complete · Due Oct 08</p><div className="progress-metrics"><span><strong>3</strong><small>sessions left</small></span><span><strong>72%</strong><small>complete</small></span><span><strong>Oct 08</strong><small>target date</small></span></div>');
+fs.writeFileSync(path, s);
