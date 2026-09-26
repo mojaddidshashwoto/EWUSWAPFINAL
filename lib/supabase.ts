@@ -111,6 +111,13 @@ export type ProfileReview = {
   comment: string;
 };
 
+export type AdminWalletUser = {
+  id: string;
+  display_name: string;
+  email: string;
+  credits_balance: number;
+};
+
 export type PrivacySettings = {
   messagePolicy?: "everyone" | "followers" | "matches" | "nobody";
   callPolicy?: "everyone" | "followers" | "matches" | "nobody";
@@ -426,6 +433,29 @@ export async function listTopServiceProviders() {
     sentimentScore: Number(provider.sentiment_score ?? 0),
     rank: Number(provider.rank),
   }));
+}
+
+export async function listAdminWalletUsers(): Promise<AdminWalletUser[]> {
+  const { data, error } = await supabase.rpc("ss_admin_list_wallet_users");
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    display_name: row.display_name,
+    email: row.email ?? "",
+    credits_balance: Number(row.credits_balance ?? 0),
+  }));
+}
+
+export async function adminDepositCredits(userId: string, amountCredits: number) {
+  const { data, error } = await supabase.rpc("ss_admin_deposit_credits", {
+    p_user_id: userId,
+    p_amount_credits: amountCredits,
+    p_note: "Manual cash deposit",
+  });
+  if (error) throw error;
+  window.dispatchEvent(new Event("ss_wallet_updated"));
+  window.dispatchEvent(new Event("ss_user_changed"));
+  return data?.[0] as { transaction_id: string; user_id: string; amount_credits: number; balance_after: number; created_at: string } | undefined;
 }
 
 export async function listSkillSwapListings() {

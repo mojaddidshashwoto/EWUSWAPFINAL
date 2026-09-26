@@ -42,6 +42,7 @@ import {
   ChevronRight,
   RefreshCw,
   Building,
+  Coins,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -51,10 +52,13 @@ import {
   listVerificationRequests,
   approveVerificationRequest,
   rejectVerificationRequest,
+  listAdminWalletUsers,
+  adminDepositCredits,
   listDisputes,
   resolveDispute,
   type VerificationRequest,
   type PlatformDispute,
+  type AdminWalletUser,
   type UserRole,
 } from "@/lib/supabase";
 
@@ -64,6 +68,10 @@ export default function AdminDashboard() {
 
   // Tabs: overview | verifications | disputes
   const [activeTab, setActiveTab] = useState("overview");
+  const [creditUsers, setCreditUsers] = useState<AdminWalletUser[]>([]);
+  const [creditUsersLoading, setCreditUsersLoading] = useState(false);
+  const [depositAmounts, setDepositAmounts] = useState<Record<string, string>>({});
+  const [depositingUserId, setDepositingUserId] = useState<string | null>(null);
 
   // Verifications State
   const [verifications, setVerifications] = useState<VerificationRequest[]>([]);
@@ -102,6 +110,46 @@ export default function AdminDashboard() {
       window.removeEventListener("ss_disputes_changed", handleDisputesChanged);
     };
   }, []);
+
+  const loadCreditUsers = async () => {
+    setCreditUsersLoading(true);
+    try {
+      setCreditUsers(await listAdminWalletUsers());
+    } catch (error: any) {
+      toast.error(error?.message || "Could not load wallet users.");
+    } finally {
+      setCreditUsersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.role === "admin") loadCreditUsers();
+  }, [user?.role]);
+
+  const handleManualDeposit = async (targetUser: AdminWalletUser) => {
+    const amount = Number(depositAmounts[targetUser.id]);
+    if (!Number.isInteger(amount) || amount <= 0 || amount > 100000) {
+      toast.error("Enter a whole-number deposit from 1 to 100,000 credits.");
+      return;
+    }
+
+    setDepositingUserId(targetUser.id);
+    try {
+      const result = await adminDepositCredits(targetUser.id, amount);
+      if (!result) throw new Error("Deposit completed but no audit result was returned.");
+      setCreditUsers((current) => current.map((profile) => profile.id === targetUser.id
+        ? { ...profile, credits_balance: result.balance_after }
+        : profile));
+      setDepositAmounts((current) => ({ ...current, [targetUser.id]: "" }));
+      toast.success(`${amount} credits deposited to ${targetUser.display_name}.`, {
+        description: `New balance: ${result.balance_after} credits. Audit transaction recorded.`,
+      });
+    } catch (error: any) {
+      toast.error(error?.message || "Credit deposit failed.");
+    } finally {
+      setDepositingUserId(null);
+    }
+  };
 
   // Verification actions
   const handleApproveVerification = async (id: string, name: string) => {
@@ -156,6 +204,7 @@ export default function AdminDashboard() {
 
   // Check Role Protection strictly against user session
   const isAuthorized = hasRole(["admin", "moderator"]);
+  const isAdmin = user?.role === "admin";
 
   if (!isLoadingAuth && !isAuthorized) {
     return (
@@ -248,7 +297,7 @@ export default function AdminDashboard() {
 
         {/* MAIN ADMIN TABS */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-2xl grid grid-cols-3 max-w-md shadow-xs">
+          <TabsList className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-2xl grid ${isAdmin ? "grid-cols-4 max-w-3xl" : "grid-cols-3 max-w-md"} shadow-xs`}>
             <TabsTrigger
               value="overview"
               className="rounded-xl text-xs font-bold py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
@@ -277,6 +326,14 @@ export default function AdminDashboard() {
                 </span>
               )}
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger
+                value="credit-management"
+                className="rounded-xl text-xs font-bold py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
+              >
+                Credit Management
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* ========================================================================= */}
@@ -455,6 +512,73 @@ export default function AdminDashboard() {
               </Card>
             </div>
           </TabsContent>
+
+          {isAdmin && (
+            <TabsContent value="credit-management" className="space-y-4 m-0">
+              <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-xs">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Coins className="h-4 w-4 text-amber-500" /> Manual Credit Deposits
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Deposit credits received in person. Every deposit increments the balance and records an immutable audit entry.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {creditUsersLoading ? (
+                    <p className="py-8 text-center text-sm text-slate-500">Loading users…</p>
+                  ) : creditUsers.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-slate-500">No user profiles found.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[680px] text-left text-xs">
+                        <thead className="border-b text-[10px] uppercase tracking-wide text-slate-500">
+                          <tr>
+                            <th className="px-3 py-3 font-semibold">User</th>
+                            <th className="px-3 py-3 font-semibold">Email</th>
+                            <th className="px-3 py-3 text-right font-semibold">Current Credits</th>
+                            <th className="px-3 py-3 font-semibold">Deposit Credits</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {creditUsers.map((profile) => (
+                            <tr key={profile.id} className="border-b last:border-0">
+                              <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white">{profile.display_name}</td>
+                              <td className="px-3 py-3 text-slate-500">{profile.email}</td>
+                              <td className="px-3 py-3 text-right font-bold tabular-nums">{profile.credits_balance}</td>
+                              <td className="px-3 py-3">
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    aria-label={`Credits to deposit for ${profile.display_name}`}
+                                    type="number"
+                                    min="1"
+                                    max="100000"
+                                    step="1"
+                                    inputMode="numeric"
+                                    placeholder="Amount"
+                                    value={depositAmounts[profile.id] ?? ""}
+                                    onChange={(event) => setDepositAmounts((current) => ({ ...current, [profile.id]: event.target.value }))}
+                                    className="h-9 w-28"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    disabled={depositingUserId === profile.id}
+                                    onClick={() => handleManualDeposit(profile)}
+                                  >
+                                    {depositingUserId === profile.id ? "Depositing…" : "Deposit Credits"}
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
           {/* ========================================================================= */}
           {/* TAB 2: VERIFICATION QUEUE (ss_verification_requests) */}
