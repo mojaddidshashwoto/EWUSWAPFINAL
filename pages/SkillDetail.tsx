@@ -11,6 +11,7 @@ import {
   Sparkles, Laptop, Users, RefreshCw, LockKeyhole, Heart
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { EscrowCheckoutModal } from "@/components/EscrowCheckoutModal";
 import { listPublishedSkillCourses } from "@/lib/supabase";
 
@@ -65,6 +66,7 @@ const SAMPLE_SKILL_DATA = {
 
 export default function SkillDetail() {
   const [location, setLocation] = useLocation();
+  const { user } = useAuth();
 
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [payModalOpen, setPayModalOpen] = useState(false);
@@ -77,6 +79,7 @@ export default function SkillDetail() {
   const [isLiked, setIsLiked] = useState(false);
 
   const courseId = location.split("/")[2];
+  const isOwnListing = Boolean(user?.id && skill.teacher.id === user.id);
 
   useEffect(() => {
     let isActive = true;
@@ -282,25 +285,39 @@ export default function SkillDetail() {
 
               <CardContent className="p-5 space-y-4">
                 <div className="space-y-2">
-                  {/* Primary CTA 1: Request Free Swap */}
-                  <Button
-                    onClick={() => setSwapModalOpen(true)}
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-2 py-5"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    Request Free Swap (Skill Exchange)
-                  </Button>
+                  {isOwnListing ? (
+                    <div className="p-4 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/80 text-center space-y-1.5">
+                      <div className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        You are the instructor of this listing
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Self-booking is disabled. Other students and peers can book this session from Discovery.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Primary CTA 1: Request Free Swap */}
+                      <Button
+                        onClick={() => setSwapModalOpen(true)}
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-2 py-5"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Request Free Swap (Skill Exchange)
+                      </Button>
 
-                  {/* Primary CTA 2: Pay for Service */}
-                  <Button
-                    onClick={() => setPayModalOpen(true)}
-                    disabled={!isLiveListing}
-                    title={isLiveListing ? "Pay for this published service" : "This preview listing is not available for checkout"}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/20 gap-2 py-5"
-                  >
-                    <Coins className="w-4 h-4" />
-                    Pay for Service ({skill.creditCost} Credits)
-                  </Button>
+                      {/* Primary CTA 2: Pay for Service */}
+                      <Button
+                        onClick={() => setPayModalOpen(true)}
+                        disabled={!isLiveListing}
+                        title={isLiveListing ? "Pay for this published service" : "This preview listing is not available for checkout"}
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/20 gap-2 py-5"
+                      >
+                        <Coins className="w-4 h-4" />
+                        Pay for Service ({skill.creditCost} Credits)
+                      </Button>
+                    </>
+                  )}
                 </div>
 
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">

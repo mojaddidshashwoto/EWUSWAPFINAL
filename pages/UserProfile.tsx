@@ -139,7 +139,7 @@ export default function UserProfile() {
           bio: row.bio || "",
           education: row.education || "Not added yet",
           certifications: typeof row.certifications === "string" ? row.certifications.split(",").map((item: string) => item.trim()).filter(Boolean) : [],
-          skillsTeaching: privacy?.show_skills === true ? skills : [],
+          skillsTeaching: privacy?.show_skills === false ? [] : skills,
           skillsLearning: typeof row.learning_skills === "string" ? row.learning_skills.split(",").map((item: string) => item.trim()).filter(Boolean) : [],
           portfolioProjects: [],
           reviews,

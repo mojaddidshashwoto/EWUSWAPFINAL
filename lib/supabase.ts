@@ -985,6 +985,8 @@ export async function submitEscrowProof(transactionId: string) {
     p_proof_reference: "payer-confirmed",
   });
   if (error) throw error;
+  window.dispatchEvent(new Event("ss_wallet_updated"));
+  window.dispatchEvent(new Event("ss_user_changed"));
   return data;
 }
 
@@ -1314,18 +1316,44 @@ export function broadcastRealtimeChange(table: string, eventType: "INSERT" | "UP
 /**
  * Dispatches a realtime message to ss_messages table and broadcasts to subscribers
  */
-export function sendSupabaseRealtimeMessage(input: {
+export async function sendSupabaseRealtimeMessage(input: {
   conversationId: string;
   senderId: string;
   text: string;
 }) {
-  const record = {
-    id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-    conversation_id: input.conversationId,
-    sender_id: input.senderId,
-    body: input.text,
-    created_at: new Date().toISOString(),
-  };
+  let record: any = null;
+  const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
+  if (isUuid(input.conversationId) && isUuid(input.senderId)) {
+    try {
+      const { data, error } = await supabase
+        .from("ss_messages")
+        .insert({
+          conversation_id: input.conversationId,
+          sender_id: input.senderId,
+          body: input.text.trim(),
+        })
+        .select()
+        .maybeSingle();
+
+      if (!error && data) {
+        record = data;
+      }
+    } catch {
+      // fallback to in-memory record if table or foreign key constraint is not met
+    }
+  }
+
+  if (!record) {
+    record = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      conversation_id: input.conversationId,
+      sender_id: input.senderId,
+      body: input.text,
+      created_at: new Date().toISOString(),
+    };
+  }
+
   broadcastRealtimeChange("ss_messages", "INSERT", record);
   return record;
 }
