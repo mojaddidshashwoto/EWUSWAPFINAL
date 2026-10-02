@@ -13,10 +13,13 @@ import {
   Check, X, Sparkles, MoreVertical, AlertCircle, Ban, Radio, Bot
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   supabase,
+  listMyConversations,
   sendSupabaseRealtimeMessage,
   proposeSupabaseRealtimeCall,
+  updateSupabaseCallStatus,
 } from "@/lib/supabase";
 
 interface Message {
@@ -39,55 +42,46 @@ interface Conversation {
   messages: Message[];
 }
 
-const SAMPLE_CONVERSATIONS: Conversation[] = [
-  {
-    id: "conv-1",
-    peerId: "usr-noah",
-    peerName: "Noah Williams",
-    peerAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80",
-    lastMessage: "Hi Aisha! Are we still good for the Figma sprint at 4 PM?",
-    unreadCount: 1,
-    isOnline: true,
-    messages: [
-      { id: "m1", senderId: "usr-noah", text: "Hi Aisha! Are we still good for the Figma sprint at 4 PM?", timestamp: "3:45 PM" },
-      { id: "m2", senderId: "me", text: "Yes! Looking forward to reviewing the auto-layout component library.", timestamp: "3:47 PM" },
-    ],
-  },
-  {
-    id: "conv-2",
-    peerId: "usr-priya",
-    peerName: "Priya Shah",
-    peerAvatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=120&q=80",
-    lastMessage: "Thanks for the React code review yesterday!",
-    unreadCount: 0,
-    isOnline: false,
-    messages: [
-      { id: "m3", senderId: "usr-priya", text: "Thanks for the React code review yesterday!", timestamp: "Yesterday" },
-      { id: "m4", senderId: "me", text: "Anytime! Let me know if you want to practice Tableau next.", timestamp: "Yesterday" },
-    ],
-  },
-];
-
 export default function MessagesPage() {
-  const [conversations, setConversations] = useState<Conversation[]>(SAMPLE_CONVERSATIONS);
-  const [activeConvId, setActiveConvId] = useState<string>("conv-1");
+  const { user } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState("");
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [realtimeStatus, setRealtimeStatus] = useState<string>("CONNECTING");
 
   // Call Modal State
   const [isCallActive, setIsCallActive] = useState(false);
-  const [activeCallPeer, setActiveCallPeer] = useState<{ name: string; avatar: string }>({
-    name: "Noah Williams",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80",
-  });
+  const [activeCallPeer, setActiveCallPeer] = useState<{ name: string; avatar: string }>({ name: "", avatar: "" });
 
-  const activeConv = conversations.find((c) => c.id === activeConvId) || conversations[0];
+  const activeConv = conversations.find((c) => c.id === activeConvId);
+
+  useEffect(() => {
+    let isActive = true;
+    listMyConversations()
+      .then((rows) => {
+        if (!isActive) return;
+        setConversations(rows);
+        setActiveConvId((current) => rows.some((conversation) => conversation.id === current) ? current : rows[0]?.id ?? "");
+      })
+      .catch((error: any) => {
+        if (isActive) toast.error(error?.message || "Could not load conversations.");
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingConversations(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   // =========================================================================
   // SUPABASE REALTIME SUBSCRIPTION (ss_messages & ss_call_sessions)
   // =========================================================================
   useEffect(() => {
+    if (!activeConvId) return;
     const channelTopic = `room:${activeConvId}`;
     console.log(`[Supabase Realtime] Mounting channel subscription on ${channelTopic}...`);
 
@@ -121,7 +115,7 @@ export default function MessagesPage() {
                   }),
                 };
 
-                if (rec.sender_id !== "me") {
+                if (rec.sender_id !== user?.id) {
                   toast.info(`Realtime message from ${c.peerName}`, {
                     description: rec.body,
                   });
@@ -163,7 +157,7 @@ export default function MessagesPage() {
                   callStatus: rec.status || "requested",
                 };
 
-                if (rec.caller_id !== "me") {
+                if (rec.caller_id !== user?.id) {
                   toast.info(`📹 Realtime Call Proposal from ${c.peerName}!`);
                 }
 
@@ -187,92 +181,80 @@ export default function MessagesPage() {
       console.log(`[Supabase Realtime] Cleaning up subscription for channel ${channelTopic}`);
       supabase.removeChannel(channel);
     };
-  }, [activeConvId]);
+  }, [activeConvId, user?.id]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageInput.trim()) return;
+    if (!messageInput.trim() || !activeConv) return;
 
     const text = messageInput.trim();
-    setMessageInput("");
-
-    // Dispatch into Supabase Realtime channel
-    sendSupabaseRealtimeMessage({
-      conversationId: activeConvId,
-      senderId: "me",
-      text,
-    });
+    try {
+      const row = await sendSupabaseRealtimeMessage({ conversationId: activeConv.id, text });
+      setMessageInput("");
+      setConversations((current) => current.map((conversation) => {
+        if (conversation.id !== activeConv.id || conversation.messages.some((message) => message.id === row.id)) return conversation;
+        return {
+          ...conversation,
+          lastMessage: row.body,
+          messages: [...conversation.messages, {
+            id: row.id,
+            senderId: row.sender_id,
+            text: row.body,
+            timestamp: new Date(row.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          }],
+        };
+      }));
+    } catch (error: any) {
+      toast.error(error?.message || "Could not send this message.");
+    }
   };
 
-  const handleRequestCall = () => {
-    // Dispatch Call Proposal into Supabase Realtime channel
-    proposeSupabaseRealtimeCall({
-      conversationId: activeConvId,
-      callerId: "me",
-      calleeId: activeConv.peerId,
-      status: "requested",
-    });
-    toast.info(`Call request sent to ${activeConv.peerName} via Supabase Realtime.`);
+  const handleRequestCall = async () => {
+    if (!activeConv) return;
+    try {
+      await proposeSupabaseRealtimeCall({ conversationId: activeConv.id, calleeId: activeConv.peerId });
+      toast.success(`Call request sent to ${activeConv.peerName}.`);
+    } catch (error: any) {
+      toast.error(error?.message || "Could not send this call request.");
+    }
   };
 
-  // Helper to simulate incoming peer response for demonstration
-  const handleSimulatePeerReply = () => {
-    const peerReplies = [
-      "Sounds great! I just checked the design tokens on Figma.",
-      "Got it! Let me know if you want to test the escrow flow next.",
-      "Confirmed! See you in the study group session.",
-      "Awesome! I'm reviewing the auto-layout component library now.",
-    ];
-    const randomReply = peerReplies[Math.floor(Math.random() * peerReplies.length)];
-
-    sendSupabaseRealtimeMessage({
-      conversationId: activeConvId,
-      senderId: activeConv.peerId,
-      text: randomReply,
-    });
+  const handleAcceptCall = async (msgId: string) => {
+    if (!activeConv) return;
+    try {
+      await updateSupabaseCallStatus(msgId, "active");
+      setConversations((prev) => prev.map((conversation) => conversation.id === activeConv.id
+        ? { ...conversation, messages: conversation.messages.map((message) => message.id === msgId ? { ...message, callStatus: "accepted" } : message) }
+        : conversation));
+      setActiveCallPeer({ name: activeConv.peerName, avatar: activeConv.peerAvatar });
+      setIsCallActive(true);
+    } catch (error: any) {
+      toast.error(error?.message || "Could not accept this call.");
+    }
   };
 
-  const handleSimulatePeerCallProposal = () => {
-    proposeSupabaseRealtimeCall({
-      conversationId: activeConvId,
-      callerId: activeConv.peerId,
-      calleeId: "me",
-      status: "requested",
-    });
+  const handleDeclineCall = async (msgId: string) => {
+    if (!activeConv) return;
+    try {
+      await updateSupabaseCallStatus(msgId, "declined");
+      setConversations((prev) => prev.map((conversation) => conversation.id === activeConv.id
+        ? { ...conversation, messages: conversation.messages.map((message) => message.id === msgId ? { ...message, callStatus: "declined" } : message) }
+        : conversation));
+      toast.info("Call request declined.");
+    } catch (error: any) {
+      toast.error(error?.message || "Could not decline this call.");
+    }
   };
 
-  const handleAcceptCall = (msgId: string) => {
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === activeConvId
-          ? {
-              ...c,
-              messages: c.messages.map((m) =>
-                m.id === msgId ? { ...m, callStatus: "accepted" as const } : m
-              ),
-            }
-          : c
-      )
+  if (!activeConv) {
+    return (
+      <DashboardLayout>
+        <div className="mx-auto max-w-2xl py-20 text-center text-sm text-slate-500 dark:text-slate-400">
+          {isLoadingConversations ? "Loading conversations..." : "No conversations yet."}
+        </div>
+      </DashboardLayout>
     );
-    setActiveCallPeer({ name: activeConv.peerName, avatar: activeConv.peerAvatar });
-    setIsCallActive(true);
-  };
-
-  const handleDeclineCall = (msgId: string) => {
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === activeConvId
-          ? {
-              ...c,
-              messages: c.messages.map((m) =>
-                m.id === msgId ? { ...m, callStatus: "declined" as const } : m
-              ),
-            }
-          : c
-      )
-    );
-    toast.info("Call request declined.");
-  };
+  }
 
   return (
     <DashboardLayout>
@@ -319,7 +301,7 @@ export default function MessagesPage() {
                       <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate flex items-center gap-1">
                         {conv.peerName}
                       </h4>
-                      <span className="text-[10px] text-slate-400">3:47 PM</span>
+                      <span className="text-[10px] text-slate-400">{conv.messages[conv.messages.length - 1]?.timestamp ?? ""}</span>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{conv.lastMessage}</p>
                   </div>
@@ -348,7 +330,7 @@ export default function MessagesPage() {
             <div className="flex items-center gap-2">
               <Badge className="hidden sm:inline-flex bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] items-center gap-1.5 font-semibold py-1 px-2.5">
                 <Radio className="w-3 h-3 text-emerald-500 animate-pulse" />
-                <span>Realtime Active</span>
+                <span>{realtimeStatus === "SUBSCRIBED" ? "Realtime Active" : realtimeStatus}</span>
               </Badge>
 
               <Button
@@ -360,7 +342,7 @@ export default function MessagesPage() {
                 Request Call
               </Button>
 
-              {/* Realtime Simulation & Discrete Options */}
+              {/* Conversation actions */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500">
@@ -368,21 +350,6 @@ export default function MessagesPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-                  <DropdownMenuItem
-                    onClick={handleSimulatePeerReply}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 cursor-pointer font-medium"
-                  >
-                    <Bot className="w-3.5 h-3.5 mr-2" />
-                    Simulate Peer Realtime Message
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handleSimulatePeerCallProposal}
-                    className="text-xs text-emerald-600 dark:text-emerald-400 cursor-pointer font-medium"
-                  >
-                    <PhoneCall className="w-3.5 h-3.5 mr-2" />
-                    Simulate Peer Call Proposal
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => toast.warning(`Report filed for ${activeConv.peerName}. Submitted for moderator review.`)}
                     className="text-xs text-amber-600 cursor-pointer"
@@ -406,7 +373,7 @@ export default function MessagesPage() {
           {/* Messages Timeline */}
           <div className="flex-1 p-6 overflow-y-auto space-y-4">
             {activeConv.messages.map((msg) => {
-              const isMe = msg.senderId === "me";
+              const isMe = msg.senderId === user?.id;
 
               if (msg.isCallRequest) {
                 return (

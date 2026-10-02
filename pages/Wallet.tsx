@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  supabase,
   getCurrentUser,
   listWalletTransactions,
   type WalletTransaction,
@@ -87,11 +88,32 @@ export default function WalletPage() {
   };
 
   useEffect(() => {
-    loadData();
+    let isMounted = true;
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+    const loadAndSubscribe = async () => {
+      await loadData();
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        toast.error(error.message || "Could not subscribe to wallet updates.");
+        return;
+      }
+      if (!user || !isMounted) return;
+
+      const refresh = () => { void loadData(); };
+      channel = supabase
+        .channel(`wallet:${user.id}`)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "ss_profiles", filter: `id=eq.${user.id}` }, refresh)
+        .on("postgres_changes", { event: "*", schema: "public", table: "ss_escrow_transactions", filter: `payer_id=eq.${user.id}` }, refresh)
+        .on("postgres_changes", { event: "*", schema: "public", table: "ss_escrow_transactions", filter: `payee_id=eq.${user.id}` }, refresh)
+        .subscribe();
+    };
+    void loadAndSubscribe();
     const handleUpdate = () => loadData();
     window.addEventListener("ss_wallet_updated", handleUpdate);
     window.addEventListener("ss_user_changed", handleUpdate);
     return () => {
+      isMounted = false;
+      if (channel) void supabase.removeChannel(channel);
       window.removeEventListener("ss_wallet_updated", handleUpdate);
       window.removeEventListener("ss_user_changed", handleUpdate);
     };

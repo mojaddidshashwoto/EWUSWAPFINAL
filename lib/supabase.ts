@@ -200,7 +200,7 @@ export async function getCurrentUser() {
   const fullName = metadata.full_name || metadata.name || authUser.email?.split("@")[0] || "User";
   const { data: profile, error: profileError } = await supabase
     .from("ss_profiles")
-    .select("*")
+    .select("id, display_name, avatar_url, role, credits_balance, bdt_balance, is_verified")
     .eq("id", authUser.id)
     .maybeSingle();
 
@@ -228,14 +228,14 @@ export async function getProfileDetails(userId?: string) {
   }
   if (!targetUserId) throw new Error("You must be signed in to load this profile.");
 
-  const [{ data: profile, error: profileError }, { data: privacy, error: privacyError }] = await Promise.all([
-    supabase.from("ss_profiles").select("*").eq("id", targetUserId).maybeSingle(),
-    supabase.from("ss_profile_privacy").select("*").eq("user_id", targetUserId).maybeSingle(),
-  ]);
+  const { data: profile, error: profileError } = await supabase
+    .from("ss_public_profiles")
+    .select("id, display_name, avatar_url, bio, education, skills, learning_skills, certifications, availability_status, is_verified, trust_score, show_skills")
+    .eq("id", targetUserId)
+    .maybeSingle();
   if (profileError) throw profileError;
-  if (privacyError) throw privacyError;
 
-  return { profile, privacy };
+  return { profile, privacy: profile ? { show_skills: profile.show_skills } : null };
 }
 
 export async function listProfileReviews(profileId: string): Promise<ProfileReview[]> {
@@ -250,7 +250,7 @@ export async function listProfileReviews(profileId: string): Promise<ProfileRevi
 
   const reviewerIds = [...new Set(reviews.map((review) => review.reviewer_id))];
   const { data: reviewers, error: reviewersError } = await supabase
-    .from("ss_profiles")
+    .from("ss_public_profiles")
     .select("id, display_name, avatar_url")
     .in("id", reviewerIds);
   if (reviewersError) throw reviewersError;
@@ -319,7 +319,7 @@ export async function updateProfileDetails(details: ProfileDetails) {
   const { data, error } = await supabase
     .from("ss_profiles")
     .upsert(profileRow, { onConflict: "id" })
-    .select()
+    .select("id, display_name, avatar_url, bio, role, education, skills, learning_skills, certifications, availability_status, is_verified, trust_score")
     .single();
   if (error) throw error;
   window.dispatchEvent(new Event("ss_user_changed"));
@@ -371,7 +371,7 @@ export async function listPublishedSkillCourses(): Promise<PublishedSkillCourse[
   const categoryIds = [...new Set(courses.map((course) => course.category_id))];
   const courseIds = courses.map((course) => course.id);
   const [profilesResult, categoriesResult, reviewsResult] = await Promise.all([
-    supabase.from("ss_profiles").select("id, display_name, avatar_url, bio, education, availability_status, is_verified, trust_score").in("id", instructorIds),
+    supabase.from("ss_public_profiles").select("id, display_name, avatar_url, bio, education, availability_status, is_verified, trust_score").in("id", instructorIds),
     supabase.from("ss_skill_categories").select("id, name").in("id", categoryIds),
     supabase.from("ss_course_reviews").select("course_id, rating").in("course_id", courseIds).eq("is_published", true),
   ]);
@@ -939,7 +939,7 @@ export async function listMyEscrowTransactions(): Promise<UserEscrowTransaction[
   const profileIds = [...new Set(rows.flatMap((row) => [row.payer_id, row.payee_id]))];
   const courseIds = [...new Set(rows.map((row) => row.course_id).filter(Boolean))];
   const profilesResult = await supabase
-    .from("ss_profiles")
+    .from("ss_public_profiles")
     .select("id, display_name, avatar_url")
     .in("id", profileIds);
   if (profilesResult.error) throw profilesResult.error;
@@ -1020,7 +1020,7 @@ export async function listCommunityPosts(): Promise<CommunityPost[]> {
   const postIds = posts.map((post) => post.id);
   const authorIds = [...new Set(posts.map((post) => post.author_id))];
   const [profilesResult, likesResult, myLikesResult] = await Promise.all([
-    supabase.from("ss_profiles").select("id, display_name, avatar_url, education, is_verified").in("id", authorIds),
+    supabase.from("ss_public_profiles").select("id, display_name, avatar_url, education, is_verified").in("id", authorIds),
     supabase.from("ss_post_likes").select("post_id").in("post_id", postIds),
     supabase.from("ss_post_likes").select("post_id").eq("user_id", user.id).in("post_id", postIds),
   ]);
@@ -1188,193 +1188,111 @@ export async function createPaidEscrow(input: {
 }
 
 export async function createConversation(participantId: string) {
-  return {
-    id: `conv_${participantId}`,
-    participantId,
-    createdAt: new Date().toISOString(),
-  };
+  const { data, error } = await supabase.rpc("ss_create_conversation", {
+    p_target_id: participantId,
+  });
+  if (error) throw error;
+  return { id: data as string, participantId, createdAt: new Date().toISOString() };
 }
 
-// -------------------------------------------------------------
-// SUPABASE REALTIME CLIENT IMPLEMENTATION (Postgres Replication & Channels)
-// -------------------------------------------------------------
+export async function listMyConversations() {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error("You must be signed in to load conversations.");
 
-export type RealtimePostgresChangesFilter = {
-  event: "INSERT" | "UPDATE" | "DELETE" | "*";
-  schema?: string;
-  table: string;
-  filter?: string;
-};
+  const { data: ownMemberships, error: ownMembershipsError } = await supabase
+    .from("ss_conversation_members")
+    .select("conversation_id")
+    .eq("user_id", user.id);
+  if (ownMembershipsError) throw ownMembershipsError;
 
-export type RealtimePayload<T = any> = {
-  schema: string;
-  table: string;
-  commit_timestamp: string;
-  eventType: "INSERT" | "UPDATE" | "DELETE";
-  new: T;
-  old: T | null;
-  errors?: string[];
-};
+  const conversationIds = [...new Set((ownMemberships ?? []).map((row) => row.conversation_id))];
+  if (conversationIds.length === 0) return [];
 
-export class RealtimeChannel {
-  public topic: string;
-  private postgresCallbacks: Array<{
-    filter: RealtimePostgresChangesFilter;
-    callback: (payload: RealtimePayload) => void;
-  }> = [];
-  private isSubscribed: boolean = false;
-  private messageHandler: ((event: Event) => void) | null = null;
+  const [membershipsResult, messagesResult] = await Promise.all([
+    supabase.from("ss_conversation_members").select("conversation_id, user_id").in("conversation_id", conversationIds),
+    supabase.from("ss_messages").select("id, conversation_id, sender_id, body, created_at").in("conversation_id", conversationIds).is("deleted_at", null).order("created_at", { ascending: true }),
+  ]);
+  if (membershipsResult.error) throw membershipsResult.error;
+  if (messagesResult.error) throw messagesResult.error;
 
-  constructor(topic: string) {
-    this.topic = topic;
-  }
+  const peerIds = [...new Set((membershipsResult.data ?? []).map((row) => row.user_id).filter((id) => id !== user.id))];
+  const { data: profiles, error: profilesError } = peerIds.length
+    ? await supabase.from("ss_public_profiles").select("id, display_name, avatar_url").in("id", peerIds)
+    : { data: [], error: null };
+  if (profilesError) throw profilesError;
 
-  on(
-    type: "postgres_changes",
-    filter: RealtimePostgresChangesFilter,
-    callback: (payload: RealtimePayload) => void
-  ): this {
-    if (type === "postgres_changes") {
-      this.postgresCallbacks.push({ filter, callback });
-    }
-    return this;
-  }
-
-  subscribe(callback?: (status: "SUBSCRIBED" | "TIMED_OUT" | "CLOSED" | "CHANNEL_ERROR") => void): this {
-    this.isSubscribed = true;
-    activeChannels.set(this.topic, this);
-
-    this.messageHandler = (e: Event) => {
-      const customEvent = e as CustomEvent<{
-        type: "postgres_changes";
-        table?: string;
-        payload: any;
-      }>;
-      if (!customEvent.detail) return;
-
-      const { type, table, payload } = customEvent.detail;
-      if (type === "postgres_changes") {
-        for (const handler of this.postgresCallbacks) {
-          if (!handler.filter.table || handler.filter.table === table || handler.filter.table === "*") {
-            try {
-              handler.callback(payload);
-            } catch (err) {
-              console.error("[Realtime Callback Error]", err);
-            }
-          }
-        }
-      }
+  const profilesById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+  return conversationIds.map((id) => {
+    const peerId = (membershipsResult.data ?? []).find((member) => member.conversation_id === id && member.user_id !== user.id)?.user_id;
+    const peer = peerId ? profilesById.get(peerId) : undefined;
+    const conversationMessages = (messagesResult.data ?? []).filter((message) => message.conversation_id === id);
+    const lastMessage = conversationMessages[conversationMessages.length - 1];
+    return {
+      id,
+      peerId: peerId ?? "",
+      peerName: peer?.display_name ?? "EwuSwap member",
+      peerAvatar: peer?.avatar_url ?? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
+      lastMessage: lastMessage?.body ?? "",
+      unreadCount: 0,
+      isOnline: false,
+      messages: conversationMessages.map((message) => ({
+        id: message.id,
+        senderId: message.sender_id,
+        text: message.body,
+        timestamp: new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      })),
     };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("ss_realtime_postgres_change", this.messageHandler);
-    }
-
-    if (callback) {
-      setTimeout(() => callback("SUBSCRIBED"), 10);
-    }
-    return this;
-  }
-
-  unsubscribe(): "ok" {
-    this.isSubscribed = false;
-    if (typeof window !== "undefined" && this.messageHandler) {
-      window.removeEventListener("ss_realtime_postgres_change", this.messageHandler);
-      this.messageHandler = null;
-    }
-    activeChannels.delete(this.topic);
-    return "ok";
-  }
+  });
 }
 
-const activeChannels = new Map<string, RealtimeChannel>();
-
-export function broadcastRealtimeChange(table: string, eventType: "INSERT" | "UPDATE" | "DELETE", record: any) {
-  const payload: RealtimePayload = {
-    schema: "public",
-    table,
-    eventType,
-    new: record,
-    old: null,
-    commit_timestamp: new Date().toISOString(),
-  };
-
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(
-      new CustomEvent("ss_realtime_postgres_change", {
-        detail: {
-          type: "postgres_changes",
-          table,
-          payload,
-        },
-      })
-    );
-  }
-  return payload;
-}
 
 /**
  * Dispatches a realtime message to ss_messages table and broadcasts to subscribers
  */
 export async function sendSupabaseRealtimeMessage(input: {
   conversationId: string;
-  senderId: string;
   text: string;
 }) {
-  let record: any = null;
-  const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error("You must be signed in to send a message.");
 
-  if (isUuid(input.conversationId) && isUuid(input.senderId)) {
-    try {
-      const { data, error } = await supabase
-        .from("ss_messages")
-        .insert({
-          conversation_id: input.conversationId,
-          sender_id: input.senderId,
-          body: input.text.trim(),
-        })
-        .select()
-        .maybeSingle();
-
-      if (!error && data) {
-        record = data;
-      }
-    } catch {
-      // fallback to in-memory record if table or foreign key constraint is not met
-    }
-  }
-
-  if (!record) {
-    record = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      conversation_id: input.conversationId,
-      sender_id: input.senderId,
-      body: input.text,
-      created_at: new Date().toISOString(),
-    };
-  }
-
-  broadcastRealtimeChange("ss_messages", "INSERT", record);
-  return record;
+  const { data, error } = await supabase
+    .from("ss_messages")
+    .insert({ conversation_id: input.conversationId, sender_id: user.id, body: input.text.trim() })
+    .select("id, conversation_id, sender_id, body, created_at")
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 /**
  * Dispatches a realtime WebRTC call proposal to ss_call_sessions table
  */
-export function proposeSupabaseRealtimeCall(input: {
+export async function proposeSupabaseRealtimeCall(input: {
   conversationId: string;
-  callerId: string;
   calleeId: string;
   status?: "requested" | "accepted" | "declined" | "ended";
 }) {
-  const record = {
-    id: `call_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-    conversation_id: input.conversationId,
-    caller_id: input.callerId,
-    callee_id: input.calleeId,
-    status: input.status || "requested",
-    created_at: new Date().toISOString(),
-  };
-  broadcastRealtimeChange("ss_call_sessions", "INSERT", record);
-  return record;
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error("You must be signed in to request a call.");
+
+  const { data, error } = await supabase
+    .from("ss_call_sessions")
+    .insert({ conversation_id: input.conversationId, caller_id: user.id, callee_id: input.calleeId, status: input.status || "requested" })
+    .select("id, conversation_id, caller_id, callee_id, status, created_at")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateSupabaseCallStatus(callId: string, status: "active" | "declined" | "ended") {
+  const { data, error } = await supabase.rpc("ss_update_call_status", {
+    p_call_id: callId,
+    p_status: status,
+  });
+  if (error) throw error;
+  return data;
 }

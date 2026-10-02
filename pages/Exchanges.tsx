@@ -29,6 +29,7 @@ interface ExchangeItem {
   netCredits: number;
   feeCredits: number;
   status: "upcoming" | "pending" | "active" | "completed" | "cancelled" | "disputed";
+  escrowStatus: "pending" | "submitted" | "verified" | "released" | "rejected";
   isPayer: boolean;
 }
 
@@ -48,6 +49,7 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
     netCredits: 23,
     feeCredits: 1,
     status: "active",
+    escrowStatus: "submitted",
     isPayer: true,
   },
   {
@@ -65,6 +67,7 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
     netCredits: 17,
     feeCredits: 1,
     status: "upcoming",
+    escrowStatus: "pending",
     isPayer: true,
   },
   {
@@ -82,6 +85,7 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
     netCredits: 24,
     feeCredits: 1,
     status: "completed",
+    escrowStatus: "released",
     isPayer: true,
   },
   {
@@ -99,6 +103,7 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
     netCredits: 19,
     feeCredits: 1,
     status: "disputed",
+    escrowStatus: "submitted",
     isPayer: true,
   },
 ];
@@ -129,6 +134,7 @@ export default function ExchangesPage() {
         netCredits: Number(row.net_amount_credits ?? row.amount_credits),
         feeCredits: Number(row.platform_fee_credits ?? 0),
         status: row.dispute ? "disputed" : row.status === "released" ? "completed" : row.status === "rejected" ? "cancelled" : row.status === "pending" ? "pending" : "active",
+        escrowStatus: row.status,
         isPayer: row.isPayer,
       })));
     } catch (error: any) {
@@ -267,6 +273,7 @@ export default function ExchangesPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleOpenDisputeModal(ex.id)}
+                  disabled={ex.escrowStatus !== "submitted" && ex.escrowStatus !== "verified"}
                   className="text-xs text-rose-600 hover:bg-rose-50 border-rose-200 dark:border-rose-900"
                 >
                   <AlertCircle className="w-3.5 h-3.5 mr-1" />
@@ -276,7 +283,7 @@ export default function ExchangesPage() {
                 <Button
                   size="sm"
                   onClick={() => handleReleaseFunds(ex.id)}
-                  disabled={!ex.isPayer || ex.status !== "active"}
+                  disabled={!ex.isPayer || ex.escrowStatus !== "pending"}
                   className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-1.5"
                 >
                   <CheckCircle2 className="w-4 h-4" />
