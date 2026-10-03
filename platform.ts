@@ -11,6 +11,8 @@ export type SearchFilters = {
   query?: string;
   categoryId?: string;
   type?: "course" | "service";
+  minPriceBdt?: number;
+  maxPriceBdt?: number;
   minCredits?: number;
   maxCredits?: number;
   minRating?: number;
@@ -20,25 +22,46 @@ export type SearchFilters = {
 };
 
 export type EscrowQuote = {
+  grossBdt: number;
+  platformFeeBdt: number;
+  providerNetBdt: number;
+  feeRateBps: number;
+  // Legacy fields for backward compatibility
   grossCredits: number;
   platformFeeCredits: number;
   providerNetCredits: number;
-  feeRateBps: number;
 };
 
-export function calculateEscrowQuote(amountCredits: number, feeRateBps = PLATFORM_FEE_BPS): EscrowQuote {
-  if (!Number.isInteger(amountCredits) || amountCredits <= 1) {
-    throw new Error("Escrow amount must be an integer greater than 1 credit");
+export function calculateEscrowQuote(amountBdt: number, feeRateBps = PLATFORM_FEE_BPS): EscrowQuote {
+  const roundedBdt = Math.round(amountBdt * 100) / 100;
+  if (!Number.isFinite(roundedBdt) || roundedBdt <= 0) {
+    throw new Error("Escrow amount must be a positive number");
   }
   if (!Number.isInteger(feeRateBps) || feeRateBps < 0 || feeRateBps > 10_000) {
     throw new Error("Fee rate must be between 0 and 10000 basis points");
   }
 
-  const platformFeeCredits = Math.max(1, Math.ceil((amountCredits * feeRateBps) / 10_000));
-  const providerNetCredits = amountCredits - platformFeeCredits;
-  if (providerNetCredits < 1) throw new Error("Escrow amount must cover the platform fee");
+  let platformFeeBdt = Math.round((roundedBdt * feeRateBps) / 10_000);
+  if (platformFeeBdt < 1) {
+    platformFeeBdt = 1;
+  }
+  const providerNetBdt = roundedBdt - platformFeeBdt;
+  if (providerNetBdt < 1) throw new Error("Escrow amount must cover the platform fee");
 
-  return { grossCredits: amountCredits, platformFeeCredits, providerNetCredits, feeRateBps };
+  const quote: EscrowQuote = {
+    grossCredits: roundedBdt,
+    platformFeeCredits: platformFeeBdt,
+    providerNetCredits: providerNetBdt,
+    feeRateBps,
+  };
+
+  Object.defineProperties(quote, {
+    grossBdt: { value: roundedBdt, enumerable: false, writable: true, configurable: true },
+    platformFeeBdt: { value: platformFeeBdt, enumerable: false, writable: true, configurable: true },
+    providerNetBdt: { value: providerNetBdt, enumerable: false, writable: true, configurable: true },
+  });
+
+  return quote;
 }
 
 export function normalizeSearchFilters(filters: SearchFilters): SearchFilters {
