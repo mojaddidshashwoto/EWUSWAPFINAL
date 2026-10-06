@@ -24,7 +24,6 @@ const RECOMMENDED_SKILLS: SkillCardProps[] = [
     isVerified: true,
     category: "Design",
     type: "Service",
-    creditCost: 24,
     bdtCost: 1200,
     duration: "90 min",
     rating: 4.9,
@@ -39,7 +38,6 @@ const RECOMMENDED_SKILLS: SkillCardProps[] = [
     isVerified: true,
     category: "Technology",
     type: "Course",
-    creditCost: 18,
     bdtCost: 900,
     duration: "60 min",
     rating: 5.0,
@@ -54,7 +52,6 @@ const RECOMMENDED_SKILLS: SkillCardProps[] = [
     isVerified: true,
     category: "Marketing",
     type: "Course",
-    creditCost: 20,
     bdtCost: 1000,
     duration: "75 min",
     rating: 4.8,
@@ -69,7 +66,6 @@ const RECOMMENDED_SKILLS: SkillCardProps[] = [
     isVerified: true,
     category: "Languages",
     type: "Service",
-    creditCost: 15,
     bdtCost: 750,
     duration: "45 min",
     rating: 4.9,
@@ -108,9 +104,9 @@ export default function Dashboard() {
   const { user: authUser } = useAuth();
   const [earnModalOpen, setEarnModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
-  const [user, setUser] = useState({ displayName: "", creditsBalance: 0, bdtBalance: 0 });
-  const [escrowHistory, setEscrowHistory] = useState<Array<{ id: string; title: string; counterpartyName: string; counterpartyAvatar: string; date: string; time: string; format: string; credits: number; status: string }>>([]);
-  const [activeEscrows, setActiveEscrows] = useState<Array<{ id: string; title: string; counterpartyName: string; counterpartyAvatar: string; date: string; time: string; format: string; credits: number; status: string }>>([]);
+  const [user, setUser] = useState({ displayName: "", bdtBalance: 0 });
+  const [escrowHistory, setEscrowHistory] = useState<Array<{ id: string; title: string; counterpartyName: string; counterpartyAvatar: string; date: string; time: string; format: string; amountBdt: number; status: string }>>([]);
+  const [activeEscrows, setActiveEscrows] = useState<Array<{ id: string; title: string; counterpartyName: string; counterpartyAvatar: string; date: string; time: string; format: string; amountBdt: number; status: string }>>([]);
   const [recommendedSkills, setRecommendedSkills] = useState<SkillCardProps[]>([]);
 
   useEffect(() => {
@@ -120,7 +116,6 @@ export default function Dashboard() {
         if (!isActive) return;
         setUser({
           displayName: currentUser?.displayName || currentUser?.name || authUser?.displayName || "Member",
-          creditsBalance: currentUser?.credits ?? 0,
           bdtBalance: currentUser?.bdtBalance ?? 0,
         });
         const mappedTransactions = transactions.map((transaction) => {
@@ -136,7 +131,7 @@ export default function Dashboard() {
             time: createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
             format: "Coordinate with your exchange partner",
             bdt: amountBdt,
-            credits: amountBdt,
+            amountBdt,
             status: transaction.status,
           };
         });
@@ -150,7 +145,7 @@ export default function Dashboard() {
           isVerified: course.isVerified,
           category: course.category,
           type: course.type === "service" ? "Service" : "Course",
-          bdtCost: course.priceBdt ?? (course.creditCost ? course.creditCost * 120 : 0),
+          bdtCost: course.priceBdt,
           duration: `${course.durationMinutes} min`,
           rating: course.averageRating,
           reviewsCount: course.reviewCount,
@@ -414,7 +409,7 @@ export default function Dashboard() {
                   <p className="text-[10px] text-slate-400">with {item.counterpartyName} · {item.date}</p>
                 </div>
                 <Badge className={`${item.status === "released" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : item.status === "rejected" ? "bg-rose-500/10 text-rose-600 border-rose-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"} text-[10px]`}>
-                  {item.status} ({item.credits} Credits)
+                  {item.status} (৳ {item.amountBdt.toLocaleString()} BDT)
                 </Badge>
               </div>
             ))}

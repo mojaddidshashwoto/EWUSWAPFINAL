@@ -5,12 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Star, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { canSubmitReview } from "@/platform";
+import { submitReview } from "@/lib/supabase";
 
 export interface LeaveReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   exchangeId: string;
+  courseId: string;
   courseTitle: string;
   providerName: string;
   exchangeStatus: string;
@@ -20,7 +21,7 @@ export interface LeaveReviewModalProps {
 export function LeaveReviewModal({
   isOpen,
   onClose,
-  exchangeId,
+  courseId,
   courseTitle,
   providerName,
   exchangeStatus,
@@ -35,7 +36,7 @@ export function LeaveReviewModal({
   // Strict UI Guard: Must be completed or verified
   const isEligible = ["completed", "verified", "released"].includes(exchangeStatus);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!isEligible) {
       toast.error("Reviews can only be submitted for completed exchanges.");
       return;
@@ -47,22 +48,13 @@ export function LeaveReviewModal({
 
     setIsSubmitting(true);
     try {
-      // Validate with platform backend function
-      canSubmitReview({
-        reviewerId: "me",
-        revieweeId: "provider",
-        exchangeStatus: "released",
-        rating,
-      });
-
-      setTimeout(() => {
-        toast.success(`Review for ${providerName} published successfully!`);
-        setIsSubmitting(false);
-        onReviewSubmitted?.();
-        onClose();
-      }, 500);
+      await submitReview(courseId, rating, body, headline);
+      toast.success(`Review for ${providerName} published successfully!`);
+      onReviewSubmitted?.();
+      onClose();
     } catch (err: any) {
       toast.error(err.message || "Failed to submit review.");
+    } finally {
       setIsSubmitting(false);
     }
   };

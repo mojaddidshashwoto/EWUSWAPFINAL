@@ -12,10 +12,12 @@ import {
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { LeaveReviewModal } from "@/components/LeaveReviewModal";
 import { listMyEscrowTransactions, openEscrowDispute, releaseEscrowByPayer, submitEscrowProof } from "@/lib/supabase";
 
 interface ExchangeItem {
   id: string;
+  courseId?: string;
   title: string;
   category: string;
   teacherName: string;
@@ -115,6 +117,7 @@ export default function ExchangesPage() {
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
   const [selectedDisputeExId, setSelectedDisputeExId] = useState<string | null>(null);
   const [disputeReason, setDisputeReason] = useState("");
+  const [reviewExchange, setReviewExchange] = useState<ExchangeItem | null>(null);
 
   const loadExchanges = async () => {
     try {
@@ -126,6 +129,7 @@ export default function ExchangesPage() {
 
         return {
           id: row.id,
+          courseId: row.course?.id,
           title: row.course?.title || "Skill exchange",
           category: row.course?.category || "Other",
           teacherName: row.payee.display_name,
@@ -154,11 +158,12 @@ export default function ExchangesPage() {
     loadExchanges();
   }, []);
 
-  const handleReleaseFunds = async (id: string) => {
+  const handleReleaseFunds = async (exchange: ExchangeItem) => {
     try {
-      await releaseEscrowByPayer(id);
+      await releaseEscrowByPayer(exchange.id);
       toast.success("Payment released directly to the provider. Thank you for confirming!");
       await loadExchanges();
+      if (exchange.isPayer && exchange.courseId) setReviewExchange(exchange);
     } catch (error: any) {
       toast.error(error?.message || "Could not release funds.");
     }
@@ -294,7 +299,7 @@ export default function ExchangesPage() {
                 {ex.isPayer && (
                   <Button
                     size="sm"
-                    onClick={() => handleReleaseFunds(ex.id)}
+                    onClick={() => handleReleaseFunds(ex)}
                     disabled={ex.escrowStatus === "released" || ex.escrowStatus === "rejected"}
                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-1.5"
                   >
@@ -378,6 +383,17 @@ export default function ExchangesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {reviewExchange?.courseId && (
+        <LeaveReviewModal
+          isOpen={Boolean(reviewExchange)}
+          onClose={() => setReviewExchange(null)}
+          exchangeId={reviewExchange.id}
+          courseId={reviewExchange.courseId}
+          courseTitle={reviewExchange.title}
+          providerName={reviewExchange.teacherName}
+          exchangeStatus="released"
+        />
+      )}
     </DashboardLayout>
   );
 }

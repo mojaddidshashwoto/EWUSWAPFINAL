@@ -269,6 +269,43 @@ export async function listProfileReviews(profileId: string): Promise<ProfileRevi
   });
 }
 
+export async function submitReview(courseId: string, rating: number, comment: string, headline?: string) {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error("You must be signed in to submit a review.");
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    throw new Error("Choose a rating from 1 to 5 stars.");
+  }
+  if (!comment.trim()) throw new Error("Write a comment before submitting your review.");
+
+  const { data: escrow, error: escrowError } = await supabase
+    .from("ss_escrow_transactions")
+    .select("payee_id")
+    .eq("course_id", courseId)
+    .eq("payer_id", user.id)
+    .eq("status", "released")
+    .order("released_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (escrowError) throw escrowError;
+  if (!escrow) throw new Error("A released escrow transaction is required to review this service.");
+
+  const { data, error } = await supabase
+    .from("ss_course_reviews")
+    .insert({
+      course_id: courseId,
+      reviewer_id: user.id,
+      reviewee_id: escrow.payee_id,
+      rating,
+      headline: headline?.trim() || null,
+      body: comment.trim(),
+    })
+    .select("id, course_id, reviewer_id, reviewee_id, rating, headline, body, created_at")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function setUserRole(role: UserRole) {
   const user = await getCurrentUser();
   user.role = role;
@@ -533,7 +570,7 @@ export async function listGroupLearningSessions(): Promise<GroupLearningSession[
     learningOutcomes: row.learning_outcomes ?? "",
     startsAt: row.starts_at,
     endsAt: row.ends_at,
-    creditCost: Number(row.credit_cost),
+    priceBdt: Number(row.credit_cost) * 10,
     maxStudents: Number(row.max_students),
     enrolledStudents: Number(row.enrolled_students),
     hostName: row.host_name,
@@ -551,7 +588,7 @@ export async function createGroupLearningSession(input: {
   categorySlug: string;
   startsAt: string;
   endsAt: string;
-  creditCost: number;
+  priceBdt: number;
   maxStudents: number;
 }) {
   const { data, error } = await supabase.rpc("ss_create_group_session", {
@@ -561,7 +598,7 @@ export async function createGroupLearningSession(input: {
     p_category_slug: input.categorySlug,
     p_starts_at: input.startsAt,
     p_ends_at: input.endsAt,
-    p_credit_cost: input.creditCost,
+    p_credit_cost: Math.round(input.priceBdt / 10),
     p_max_students: input.maxStudents,
   });
   if (error) throw error;
@@ -583,7 +620,7 @@ export async function updateGroupLearningSession(sessionId: string, input: {
   categorySlug: string;
   startsAt: string;
   endsAt: string;
-  creditCost: number;
+  priceBdt: number;
   maxStudents: number;
 }) {
   const { error } = await supabase.rpc("ss_update_group_session", {
@@ -594,7 +631,7 @@ export async function updateGroupLearningSession(sessionId: string, input: {
     p_category_slug: input.categorySlug,
     p_starts_at: input.startsAt,
     p_ends_at: input.endsAt,
-    p_credit_cost: input.creditCost,
+    p_credit_cost: Math.round(input.priceBdt / 10),
     p_max_students: input.maxStudents,
   });
   if (error) throw error;
@@ -888,14 +925,11 @@ const INITIAL_TRANSACTIONS: WalletTransaction[] = [];
 
 export async function listWalletTransactions(): Promise<WalletTransaction[]> {
   const transactions = await listMyEscrowTransactions();
-  return transactions.flatMap((transaction) => {
+  return transactions.flatMap<WalletTransaction>((transaction) => {
     const status = transaction.status as string;
-    const grossBdtValue = transaction.gross_amount_bdt ?? transaction.amount_bdt;
-    const netBdtValue = transaction.net_amount_bdt;
-    const feeBdtValue = transaction.platform_fee_bdt;
-    const grossBdt = grossBdtValue == null ? null : Number(grossBdtValue);
-    const netBdt = netBdtValue == null ? null : Number(netBdtValue);
-    const feeBdt = feeBdtValue == null ? null : Number(feeBdtValue);
+    const grossBdt = Number(transaction.gross_amount_bdt ?? transaction.amount_bdt ?? 0);
+    const netBdt = Number(transaction.net_amount_bdt ?? 0);
+    const feeBdt = Number(transaction.platform_fee_bdt ?? 0);
     const title = transaction.course?.title || "Skill exchange";
     const counterparty = transaction.isPayer ? transaction.payee.display_name : transaction.payer.display_name;
     const date = new Date(transaction.created_at).toLocaleDateString();
@@ -1109,13 +1143,10 @@ export async function topUpWallet(input: {
   amountBdt: number;
   senderPhone: string;
   trxId: string;
-}): Promise<{ success: boolean; newCredits: number; transaction: WalletTransaction }> {
-  const conversionRate = 120; // 1 Credit = 120 BDT
-  const creditsToAdd = Math.floor(input.amountBdt / conversionRate);
-
+}): Promise<{ success: boolean; newBalanceBdt: number; transaction: WalletTransaction }> {
   const user = await getCurrentUser();
+  if (!user) throw new Error("You must be signed in to top up your wallet.");
   user.bdtBalance = (user.bdtBalance || 0) + input.amountBdt;
-  user.credits = (user.credits || 0) + creditsToAdd;
   localStorage.setItem("ss_current_user", JSON.stringify(user));
 
   const transactions = await listWalletTransactions();
@@ -1125,7 +1156,6 @@ export async function topUpWallet(input: {
     title: `${input.method === "bkash" ? "bKash" : "Nagad"} Wallet Top-Up`,
     counterparty: `${input.method === "bkash" ? "bKash" : "Nagad"} Gateway`,
     method: input.method,
-    amountCredits: creditsToAdd,
     amountBdt: input.amountBdt,
     date: "Just now",
     status: "Completed",
@@ -1139,7 +1169,7 @@ export async function topUpWallet(input: {
   window.dispatchEvent(new Event("ss_wallet_updated"));
   window.dispatchEvent(new Event("ss_user_changed"));
 
-  return { success: true, newCredits: user.credits, transaction: newTx };
+  return { success: true, newBalanceBdt: user.bdtBalance, transaction: newTx };
 }
 
 export async function withdrawWallet(input: {
@@ -1148,16 +1178,13 @@ export async function withdrawWallet(input: {
   targetPhone: string;
   accountType: "personal" | "agent";
 }): Promise<{ success: boolean; remainingBdt: number; transaction: WalletTransaction }> {
-  const conversionRate = 120;
-  const creditsToDeduct = Math.ceil(input.amountBdt / conversionRate);
-
   const user = await getCurrentUser();
+  if (!user) throw new Error("You must be signed in to withdraw from your wallet.");
   if ((user.bdtBalance || 0) < input.amountBdt) {
     throw new Error("Insufficient available balance for withdrawal");
   }
 
   user.bdtBalance = Math.max(0, (user.bdtBalance || 0) - input.amountBdt);
-  user.credits = Math.max(0, (user.credits || 0) - creditsToDeduct);
   localStorage.setItem("ss_current_user", JSON.stringify(user));
 
   const transactions = await listWalletTransactions();
@@ -1167,7 +1194,6 @@ export async function withdrawWallet(input: {
     title: `${input.method === "bkash" ? "bKash" : "Nagad"} Cashout (${input.accountType})`,
     counterparty: `${input.method === "bkash" ? "bKash" : "Nagad"} Payout`,
     method: input.method,
-    amountCredits: creditsToDeduct,
     amountBdt: input.amountBdt,
     date: "Just now",
     status: "Processing",

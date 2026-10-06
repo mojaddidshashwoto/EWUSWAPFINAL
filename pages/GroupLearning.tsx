@@ -84,7 +84,7 @@ export default function GroupLearningPage() {
     setNewGroupDescription(group.description);
     setNewGroupOutcomes(group.learningOutcomes);
     setNewGroupCategory(group.category.toLowerCase());
-    setNewGroupCost(String(group.creditCost));
+    setNewGroupCost(String(group.priceBdt));
     setNewGroupCapacity(String(group.maxStudents));
     setNewGroupStartsAt(toLocalDateTimeInput(new Date(group.startsAt)));
     setNewGroupEndsAt(toLocalDateTimeInput(new Date(group.endsAt)));
@@ -92,7 +92,7 @@ export default function GroupLearningPage() {
   };
 
   const handleSaveGroup = async () => {
-    const cost = Number(newGroupCost);
+    const priceBdt = Number(newGroupCost);
     const capacity = Number(newGroupCapacity);
     const startsAt = new Date(newGroupStartsAt);
     const endsAt = new Date(newGroupEndsAt);
@@ -100,8 +100,8 @@ export default function GroupLearningPage() {
       toast.error("Add a title (5+ characters), description (20+), and learning outcomes (10+).");
       return;
     }
-    if (!Number.isInteger(cost) || cost < 0 || !Number.isInteger(capacity) || capacity < 2 || Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || startsAt <= new Date() || endsAt <= startsAt) {
-      toast.error("Check the credit price, capacity, and future session start/end times.");
+    if (!Number.isInteger(priceBdt) || priceBdt < 0 || !Number.isInteger(capacity) || capacity < 2 || Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || startsAt <= new Date() || endsAt <= startsAt) {
+      toast.error("Check the BDT price, capacity, and future session start/end times.");
       return;
     }
 
@@ -112,7 +112,7 @@ export default function GroupLearningPage() {
       categorySlug: newGroupCategory,
       startsAt: startsAt.toISOString(),
       endsAt: endsAt.toISOString(),
-      creditCost: cost,
+      priceBdt,
       maxStudents: capacity,
     };
 
@@ -245,7 +245,7 @@ export default function GroupLearningPage() {
                 <div>
                   <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">
                     <Wallet className="w-4 h-4" />
-                    <span>৳ {(grp.creditCost * 10).toLocaleString()} BDT</span>
+                    <span>৳ {grp.priceBdt.toLocaleString()} BDT</span>
                   </div>
                   <span className="text-[10px] text-slate-400">per student · Escrow Protected</span>
                 </div>

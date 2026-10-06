@@ -42,10 +42,9 @@ import {
 const CONVERSION_RATE = 120; // 1 Credit = 120 BDT
 
 export default function WalletPage() {
-  const [filter, setFilter] = useState<"all" | "earned" | "spent" | "refund" | "fee" | "topup" | "withdrawal">("all");
+  const [filter, setFilter] = useState<"all" | "released" | "spent" | "refund" | "fee" | "topup" | "withdrawal">("all");
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [userBdt, setUserBdt] = useState(0);
-  const [userCredits, setUserCredits] = useState(0);
   const [copiedNumber, setCopiedNumber] = useState(false);
 
   // Modals state
@@ -70,7 +69,7 @@ export default function WalletPage() {
     .filter((transaction) => transaction.status === "Held in escrow")
     .reduce((total, transaction) => total + transaction.amountBdt, 0);
   const lifetimeEarnedBdt = transactions
-    .filter((transaction) => transaction.type === "earned" && transaction.status === "Released")
+    .filter((transaction) => transaction.type === "released" && transaction.status === "Released")
     .reduce((total, transaction) => total + transaction.amountBdt, 0);
 
   // Load balances and transactions
@@ -78,7 +77,6 @@ export default function WalletPage() {
     try {
       const [user, txs] = await Promise.all([getCurrentUser(), listWalletTransactions()]);
       setUserBdt(user?.bdtBalance || 0);
-      setUserCredits(user?.credits || 0);
       setTransactions(txs);
     } catch (error: any) {
       toast.error(error?.message || "Could not load wallet data.");
@@ -158,7 +156,7 @@ export default function WalletPage() {
         </span>
       );
     }
-    if (type === "earned") {
+    if (type === "released") {
       return (
         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
           <ArrowDownLeft className="w-3 h-3" /> Earned (+)
@@ -358,7 +356,7 @@ export default function WalletPage() {
 
             {/* Filter Pills */}
             <div className="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl text-xs">
-              {(["all", "topup", "withdrawal", "earned", "spent", "fee"] as const).map((t) => (
+              {(["all", "topup", "withdrawal", "released", "spent", "fee"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setFilter(t)}
@@ -368,7 +366,7 @@ export default function WalletPage() {
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  {t === "all" ? "All" : t === "topup" ? "Top-Ups" : t === "withdrawal" ? "Cashouts" : t === "fee" ? "Fees (5%)" : t}
+                  {t === "all" ? "All" : t === "topup" ? "Top-Ups" : t === "withdrawal" ? "Cashouts" : t === "released" ? "Earnings" : t === "fee" ? "Fees (5%)" : t}
                 </button>
               ))}
             </div>
@@ -404,14 +402,14 @@ export default function WalletPage() {
                   <div className="sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200/60 dark:border-slate-800">
                     <div
                       className={`text-sm font-extrabold ${
-                        tx.type === "earned" || tx.type === "refund" || tx.type === "topup"
+                        tx.type === "released" || tx.type === "refund" || tx.type === "topup"
                           ? "text-emerald-600 dark:text-emerald-400"
                           : tx.type === "spent" || tx.type === "withdrawal"
                           ? "text-rose-600 dark:text-rose-400"
                           : "text-slate-500"
                       }`}
                     >
-                      {tx.type === "earned" || tx.type === "refund" || tx.type === "topup" ? "+" : "-"}
+                      {tx.type === "released" || tx.type === "refund" || tx.type === "topup" ? "+" : "-"}
                       ৳ {tx.amountBdt.toLocaleString()} BDT
                     </div>
                     <div className="text-[11px] text-slate-400">
