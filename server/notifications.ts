@@ -2,7 +2,7 @@
  * Server-side Automated Notification Triggers & Email Service
  * 
  * Provides automated system notification dispatch for:
- * 1. Escrow Creation (notifies provider when a student reserves credits in escrow)
+ * 1. Escrow Creation (notifies provider when a student reserves BDT in escrow)
  * 2. Dispute Resolution (notifies learner and provider with email placeholder for Resend/SendGrid)
  */
 
@@ -85,7 +85,7 @@ export async function triggerEscrowInitiatedNotification(payload: EscrowNotifica
     userId: payload.payeeId,
     type: "escrow",
     title: "Escrow Payment Reserved",
-    message: `${payload.payerName} reserved ৳${payload.amountBdt.toLocaleString()} (${payload.amountCredits} Credits) in escrow for "${payload.courseTitle}". Session is confirmed!`,
+    message: `${payload.payerName} reserved ৳${payload.amountBdt.toLocaleString()} BDT held in escrow for "${payload.courseTitle}". Session is confirmed!`,
     metadata: {
       escrowId: payload.escrowId,
       payerId: payload.payerId,
@@ -106,9 +106,9 @@ export async function triggerDisputeResolvedNotification(payload: DisputeNotific
 
   let rulingSummary = "";
   if (payload.resolution === "refund_payer") {
-    rulingSummary = `Ruling: 100% refund of ${payload.amountCredits} credits issued to learner ${payload.learnerName}.`;
+    rulingSummary = `Ruling: 100% refund of ৳${payload.amountBdt.toLocaleString()} BDT issued to learner ${payload.learnerName}.`;
   } else if (payload.resolution === "release_provider") {
-    rulingSummary = `Ruling: Escrow funds (${payload.amountCredits} credits) released to provider ${payload.providerName}.`;
+    rulingSummary = `Ruling: Escrow funds (৳${payload.amountBdt.toLocaleString()} BDT) released to provider ${payload.providerName}.`;
   } else {
     rulingSummary = `Ruling: Compromise 50/50 split applied between learner and provider.`;
   }

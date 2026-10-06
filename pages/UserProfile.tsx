@@ -481,20 +481,34 @@ export default function UserProfile() {
                   Portfolio Projects & Evidence of Expertise
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <CardContent>
                 {profile.portfolioProjects.length === 0 ? (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">No portfolio projects have been added yet.</p>
-                ) : profile.portfolioProjects.map((proj, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">{proj.title}</h4>
-                      <a href={proj.link} target="_blank" rel="noreferrer" className="text-indigo-500 hover:text-indigo-600">
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                  <div className="flex flex-col items-center justify-center text-center py-12 px-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                      <FolderGit2 className="w-6 h-6" />
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{proj.desc}</p>
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">No portfolio items uploaded yet</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
+                        Projects and proof of work showcase practical experience to potential swap partners and learners.
+                      </p>
+                    </div>
                   </div>
-                ))}
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {profile.portfolioProjects.map((proj, idx) => (
+                      <div key={idx} className="p-4 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">{proj.title}</h4>
+                          <a href={proj.link} target="_blank" rel="noreferrer" className="text-indigo-500 hover:text-indigo-600">
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{proj.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -20,7 +20,7 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     id: "n-1",
     type: "escrow",
     title: "Escrow Payment Reserved",
-    message: "24 Credits held in escrow for your Figma Systems Sprint with Noah Williams.",
+    message: "৳1,200 BDT held in escrow for your Figma Systems Sprint with Noah Williams.",
     timestamp: "10 min ago",
     isRead: false,
   },

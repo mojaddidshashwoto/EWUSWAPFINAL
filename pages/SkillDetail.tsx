@@ -419,7 +419,10 @@ export default function SkillDetail() {
         payeeId={skill.teacher.id}
         amountCredits={skill.creditCost}
         amountBdt={skill.bdtCost}
-        onConfirmSuccess={() => setPayModalOpen(false)}
+        onConfirmSuccess={() => {
+          setPayModalOpen(false);
+          setLocation("/exchanges");
+        }}
       />
     </DashboardLayout>
   );

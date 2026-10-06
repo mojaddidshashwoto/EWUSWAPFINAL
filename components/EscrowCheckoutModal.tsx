@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShieldCheck, Wallet, LockKeyhole, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import { createPaidEscrow } from "@/lib/supabase";
 
 export interface EscrowCheckoutModalProps {
@@ -32,6 +33,7 @@ export function EscrowCheckoutModal({
   creditToBdtRate = 120,
   onConfirmSuccess,
 }: EscrowCheckoutModalProps) {
+  const [, setLocation] = useLocation();
   const [isAuthorizing, setIsAuthorizing] = useState(false);
 
   const priceBdt = amountBdt ?? (amountCredits !== undefined ? amountCredits * creditToBdtRate : 500);
@@ -56,6 +58,7 @@ export function EscrowCheckoutModal({
       toast.success(`Escrow reserved for "${skillTitle}". Transaction ${escrow.id.slice(0, 8)}.`);
       onConfirmSuccess?.();
       onClose();
+      setLocation("/exchanges");
     } catch (err: any) {
       toast.error(err?.message || "Failed to reserve escrow. Please check your BDT balance.");
     } finally {

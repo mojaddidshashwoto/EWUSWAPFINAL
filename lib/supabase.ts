@@ -25,6 +25,7 @@ export type SkillSwapListingInput = {
   availability: string;
   priceBdt?: number | null;
   priceCredits?: number | null;
+  deliveryMode?: "on_campus" | "online" | string;
 };
 
 export type GroupLearningSession = {
@@ -78,6 +79,7 @@ export type PublishedSkillCourse = {
   trustScore: number;
   reviewCount: number;
   averageRating: number;
+  deliveryMode?: "on_campus" | "online" | string;
 };
 
 export type UserEscrowTransaction = Record<string, any> & {
@@ -398,7 +400,7 @@ export async function uploadProfileAvatar(file: File | Blob | string) {
 export async function listPublishedSkillCourses(): Promise<PublishedSkillCourse[]> {
   const { data: courses, error } = await supabase
     .from("ss_courses")
-    .select("id, title, description, type, duration_minutes, price_bdt, instructor_id, category_id")
+    .select("id, title, description, type, duration_minutes, price_bdt, instructor_id, category_id, delivery_mode")
     .eq("status", "published")
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -448,6 +450,7 @@ export async function listPublishedSkillCourses(): Promise<PublishedSkillCourse[
       trustScore: Number(instructor?.trust_score ?? 0),
       reviewCount: ratings.length,
       averageRating: ratings.length ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length : 0,
+      deliveryMode: course.delivery_mode ?? "online",
     };
   });
 }
@@ -550,8 +553,9 @@ export async function createSkillSwapListing(input: SkillSwapListingInput) {
       duration_minutes: input.durationMinutes,
       credit_cost: legacyCreditCost,
       price_bdt: priceBdt,
+      delivery_mode: input.deliveryMode ?? "online",
     })
-    .select("id, title, description, type, duration_minutes, credit_cost, price_bdt, created_at")
+    .select("id, title, description, type, duration_minutes, credit_cost, price_bdt, delivery_mode, created_at")
     .single();
   if (error) throw error;
   return data;
@@ -1005,14 +1009,60 @@ export async function listMyEscrowTransactions(): Promise<UserEscrowTransaction[
     category: categories.get(course.category_id) ?? "Other",
   }]));
 
-  return rows.map((row) => ({
-    ...row,
-    isPayer: row.payer_id === user.id,
-    payer: profiles.get(row.payer_id) ?? { id: row.payer_id, display_name: "EwuSwap member", avatar_url: null },
-    payee: profiles.get(row.payee_id) ?? { id: row.payee_id, display_name: "EwuSwap member", avatar_url: null },
-    course: row.course_id ? courses.get(row.course_id) ?? null : null,
-    dispute: disputes.get(row.id) ?? null,
-  }));
+  return rows.map((row) => {
+    let localMeeting = "";
+    if (typeof window !== "undefined") {
+      try {
+        localMeeting = localStorage.getItem(`ss_meeting_${row.id}`) || "";
+      } catch {}
+    }
+
+    return {
+      ...row,
+      meeting_details: row.meeting_details || localMeeting || null,
+      isPayer: row.payer_id === user.id,
+      payer: profiles.get(row.payer_id) ?? { id: row.payer_id, display_name: "EwuSwap member", avatar_url: null },
+      payee: profiles.get(row.payee_id) ?? { id: row.payee_id, display_name: "EwuSwap member", avatar_url: null },
+      course: row.course_id ? courses.get(row.course_id) ?? null : null,
+      dispute: disputes.get(row.id) ?? null,
+    };
+  });
+}
+
+export async function updateEscrowMeetingDetails(transactionId: string, meetingDetails: string) {
+  const trimmed = meetingDetails.trim();
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(`ss_meeting_${transactionId}`, trimmed);
+    } catch {}
+  }
+
+  try {
+    const { data, error } = await supabase.rpc("ss_update_escrow_meeting_details", {
+      p_transaction_id: transactionId,
+      p_meeting_details: trimmed,
+    });
+    if (!error && data) {
+      window.dispatchEvent(new Event("ss_exchanges_updated"));
+      return data;
+    }
+  } catch (rpcErr) {
+    console.warn("[Meeting Details] RPC not available, using direct update:", rpcErr);
+  }
+
+  const { data, error } = await supabase
+    .from("ss_escrow_transactions")
+    .update({ meeting_details: trimmed })
+    .eq("id", transactionId)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    console.warn("[Meeting Details] Table update failed, persisted locally:", error.message);
+  }
+
+  window.dispatchEvent(new Event("ss_exchanges_updated"));
+  return data ?? { id: transactionId, meeting_details: trimmed };
 }
 
 export async function submitEscrowProof(transactionId: string) {

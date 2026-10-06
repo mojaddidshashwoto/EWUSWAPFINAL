@@ -1,7 +1,8 @@
-import { Star, Clock, Coins, Wallet, ShieldCheck, ArrowUpRight } from "lucide-react";
+import { Star, Clock, Coins, Wallet, ShieldCheck, ArrowUpRight, Settings, MapPin, Video } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface SkillCardProps {
   id: string;
@@ -17,7 +18,11 @@ export interface SkillCardProps {
   reviewsCount: number;
   description: string;
   mode?: "swap" | "paid";
+  authorId?: string;
+  isOwner?: boolean;
+  deliveryMode?: "on_campus" | "online" | "On-Campus" | "Online" | string;
   onBook?: (id: string) => void;
+  onManage?: (id: string) => void;
 }
 
 export function SkillCard({
@@ -34,16 +39,37 @@ export function SkillCard({
   reviewsCount,
   description,
   mode = "paid",
+  authorId,
+  isOwner: isOwnerProp,
+  deliveryMode = "online",
   onBook,
+  onManage,
 }: SkillCardProps) {
+  const { user } = useAuth();
+  const isOwner = isOwnerProp ?? Boolean(authorId && user?.id && authorId === user.id);
+  const isOnCampus = deliveryMode === "on_campus" || deliveryMode === "On-Campus" || deliveryMode === "Offline";
+
   return (
-    <Card className="group w-[300px] shrink-0 overflow-hidden border-border/60 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-xl sm:w-[320px]">
+    <Card className="group w-[300px] shrink-0 overflow-hidden border-border/70 bg-card shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-indigo-400 dark:hover:border-indigo-500/70 hover:shadow-[0_20px_40px_-10px_rgba(99,102,241,0.25),0_0_20px_-3px_rgba(16,185,129,0.15)] sm:w-[320px] relative will-change-transform">
       <div>
         {/* Header Badges */}
-        <div className="p-4 pb-2 flex items-center justify-between">
-          <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold">
-            {category}
-          </Badge>
+        <div className="p-4 pb-2 flex items-center justify-between gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold">
+              {category}
+            </Badge>
+            {isOnCampus ? (
+              <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold flex items-center gap-1">
+                <MapPin className="w-2.5 h-2.5" />
+                On-Campus
+              </Badge>
+            ) : (
+              <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30 text-[10px] font-bold flex items-center gap-1">
+                <Video className="w-2.5 h-2.5" />
+                Online
+              </Badge>
+            )}
+          </div>
           <Badge className={`text-[10px] font-semibold ${mode === "swap" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "bg-indigo-500/10 text-indigo-600 border-indigo-500/30"}`}>
             {type}
           </Badge>
@@ -98,14 +124,26 @@ export function SkillCard({
           <p className="text-[10px] text-slate-400">Escrow Protected</p>
         </div>
 
-        <Button
-          size="sm"
-          onClick={() => onBook?.(id)}
-          className="gap-1 text-xs"
-        >
-          Book Swap
-          <ArrowUpRight className="w-3.5 h-3.5" />
-        </Button>
+        {isOwner ? (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onManage ? onManage(id) : onBook?.(id)}
+            className="gap-1 text-xs border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Manage
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            onClick={() => onBook?.(id)}
+            className="gap-1 text-xs"
+          >
+            Book Swap
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );

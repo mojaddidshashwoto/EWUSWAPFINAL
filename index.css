@@ -42,6 +42,87 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes float-slow-1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(35px, -35px) scale(1.12); }
+  66% { transform: translate(-25px, 25px) scale(0.92); }
+}
+
+@keyframes float-slow-2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(-35px, 30px) scale(1.08); }
+  66% { transform: translate(30px, -25px) scale(0.95); }
+}
+
+@keyframes float-slow-3 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(30px, 25px) scale(1.15); }
+}
+
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-150%) rotate(25deg); }
+  35%, 100% { transform: translateX(200%) rotate(25deg); }
+}
+
+@keyframes gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-float-1 {
+  animation: float-slow-1 14s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float-slow-2 18s ease-in-out infinite;
+}
+
+.animate-float-3 {
+  animation: float-slow-3 12s ease-in-out infinite;
+}
+
+.animate-gradient-flow {
+  background-size: 200% 200%;
+  animation: gradient-flow 6s ease infinite;
+}
+
+.shimmer-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-btn::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 70%
+  );
+  transform: translateX(-150%) rotate(25deg);
+  animation: shimmer-sweep 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+.card-hover-3d {
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+}
+
+.card-hover-3d:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 35px -10px rgba(99, 102, 241, 0.25),
+              0 0 20px -3px rgba(16, 185, 129, 0.15);
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
 :root {
   --navy: #202342;
   --navy-2: #30355d;

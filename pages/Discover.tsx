@@ -145,6 +145,7 @@ export default function Discover() {
   const [serviceTitle, setServiceTitle] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
   const [serviceCategory, setServiceCategory] = useState("Design");
+  const [serviceDeliveryMode, setServiceDeliveryMode] = useState<"on_campus" | "online">("online");
   const [servicePriceBdt, setServicePriceBdt] = useState("500");
   const [serviceDuration, setServiceDuration] = useState("60");
 
@@ -175,10 +176,12 @@ export default function Discover() {
           rating: course.averageRating,
           reviewsCount: course.reviewCount,
           description: course.description,
-          format: "Online",
+          format: (course.deliveryMode === "on_campus" ? "Offline" : "Online") as "Online" | "Offline",
           experienceLevel: "Intermediate",
           availabilityStatus: "available",
           language: "English",
+          authorId: course.instructorId,
+          deliveryMode: course.deliveryMode ?? "online",
         })));
       })
       .catch((error) => {
@@ -218,10 +221,12 @@ export default function Discover() {
       rating: course.averageRating,
       reviewsCount: course.reviewCount,
       description: course.description,
-      format: "Online",
+      format: (course.deliveryMode === "on_campus" ? "Offline" : "Online") as "Online" | "Offline",
       experienceLevel: "Intermediate",
       availabilityStatus: "available",
       language: "English",
+      authorId: course.instructorId,
+      deliveryMode: course.deliveryMode ?? "online",
     })));
   };
 
@@ -250,11 +255,13 @@ export default function Discover() {
         durationMinutes,
         availability: "available",
         priceBdt,
+        deliveryMode: serviceDeliveryMode,
       });
       await refreshPublishedListings();
       setIsPublishOpen(false);
       setServiceTitle("");
       setServiceDescription("");
+      setServiceDeliveryMode("online");
       toast.success("Your service is published.");
     } catch (error: any) {
       toast.error(error?.message || "Could not publish your service.");
@@ -550,6 +557,16 @@ export default function Discover() {
             <div className="space-y-1.5">
               <Label htmlFor="service-description">Description</Label>
               <Textarea id="service-description" value={serviceDescription} onChange={(event) => setServiceDescription(event.target.value)} maxLength={2000} minLength={20} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="service-delivery-mode">Delivery Mode</Label>
+              <Select value={serviceDeliveryMode} onValueChange={(val: "on_campus" | "online") => setServiceDeliveryMode(val)}>
+                <SelectTrigger id="service-delivery-mode"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="on_campus">On-Campus Session</SelectItem>
+                  <SelectItem value="online">Online (Google Meet/Zoom)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">

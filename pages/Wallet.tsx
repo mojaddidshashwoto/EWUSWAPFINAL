@@ -201,19 +201,27 @@ export default function WalletPage() {
 
           <div className="flex items-center gap-2.5">
             <Button
-              onClick={() => setTopUpOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
+              disabled
+              className="bg-emerald-600/50 dark:bg-emerald-800/40 text-white/80 font-bold text-xs shadow-none flex items-center gap-1.5 cursor-not-allowed opacity-80"
+              title="bKash/Nagad top-up gateway coming soon for this MVP"
             >
               <PlusCircle className="w-4 h-4" />
               Top-Up (bKash/Nagad)
+              <Badge className="ml-1 bg-white/20 text-white border-0 text-[9px] px-1.5 py-0 h-4 font-black uppercase tracking-wider">
+                Coming Soon
+              </Badge>
             </Button>
             <Button
-              onClick={() => setWithdrawOpen(true)}
+              disabled
               variant="outline"
-              className="border-slate-300 dark:border-slate-700 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5"
+              className="border-slate-300 dark:border-slate-700 font-bold text-xs flex items-center gap-1.5 cursor-not-allowed opacity-80"
+              title="Mobile banking cashout payout coming soon for this MVP"
             >
               <Smartphone className="w-4 h-4 text-orange-500" />
               Withdraw Funds
+              <Badge className="ml-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 text-[9px] px-1.5 py-0 h-4 font-black uppercase tracking-wider">
+                Coming Soon
+              </Badge>
             </Button>
           </div>
         </div>
@@ -221,7 +229,7 @@ export default function WalletPage() {
         {/* TOP SUMMARY CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* 1. Available Balance with Quick Buttons */}
-          <Card className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white border-indigo-800/40 shadow-xl overflow-hidden relative">
+          <Card className="card-hover-3d bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white border-indigo-800/40 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
             <CardHeader className="pb-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Available Wallet Balance</span>
@@ -240,25 +248,33 @@ export default function WalletPage() {
               {/* In-Card Quick Buttons */}
               <div className="pt-2 border-t border-indigo-800/50 flex items-center gap-2">
                 <button
-                  onClick={() => setTopUpOpen(true)}
-                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+                  disabled
+                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/5 text-white/60 text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-not-allowed opacity-75"
+                  title="bKash/Nagad top-up gateway coming soon"
                 >
-                  <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
-                  Top-Up
+                  <PlusCircle className="w-3.5 h-3.5 text-emerald-400/70" />
+                  <span>Top-Up</span>
+                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 uppercase tracking-wider">
+                    Soon
+                  </span>
                 </button>
                 <button
-                  onClick={() => setWithdrawOpen(true)}
-                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+                  disabled
+                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/5 text-white/60 text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-not-allowed opacity-75"
+                  title="Cashout payout coming soon"
                 >
-                  <Smartphone className="w-3.5 h-3.5 text-orange-400" />
-                  Cashout
+                  <Smartphone className="w-3.5 h-3.5 text-orange-400/70" />
+                  <span>Cashout</span>
+                  <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 uppercase tracking-wider">
+                    Soon
+                  </span>
                 </button>
               </div>
             </CardContent>
           </Card>
 
           {/* 2. Pending in Escrow */}
-          <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <Card className="card-hover-3d bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
             <CardHeader className="pb-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Pending in Escrow</span>
             </CardHeader>
@@ -277,7 +293,7 @@ export default function WalletPage() {
           </Card>
 
           {/* 3. Lifetime Earned */}
-          <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <Card className="card-hover-3d bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
             <CardHeader className="pb-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Lifetime Earned</span>
             </CardHeader>
@@ -320,23 +336,25 @@ export default function WalletPage() {
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              onClick={() => {
-                setTopUpMethod("bkash");
-                setTopUpOpen(true);
-              }}
-              className="bg-[#E2136E] hover:bg-[#c20f5c] text-white text-xs font-bold h-8 px-3"
+              disabled
+              className="bg-[#E2136E]/60 text-white/80 text-xs font-bold h-8 px-3 cursor-not-allowed gap-1.5 opacity-80"
+              title="bKash gateway integration coming soon"
             >
               Pay via bKash
+              <Badge className="bg-white/20 text-white border-0 text-[8px] px-1 py-0 h-3.5 uppercase font-black">
+                Soon
+              </Badge>
             </Button>
             <Button
               size="sm"
-              onClick={() => {
-                setTopUpMethod("nagad");
-                setTopUpOpen(true);
-              }}
-              className="bg-[#F7921E] hover:bg-[#d87c14] text-white text-xs font-bold h-8 px-3"
+              disabled
+              className="bg-[#F7921E]/60 text-white/80 text-xs font-bold h-8 px-3 cursor-not-allowed gap-1.5 opacity-80"
+              title="Nagad gateway integration coming soon"
             >
               Pay via Nagad
+              <Badge className="bg-white/20 text-white border-0 text-[8px] px-1 py-0 h-3.5 uppercase font-black">
+                Soon
+              </Badge>
             </Button>
           </div>
         </div>

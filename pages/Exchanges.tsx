@@ -7,13 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Repeat, Calendar, Clock, CheckCircle2, ShieldCheck, AlertCircle, Laptop, Users,
-  Coins, Wallet, ArrowRight, RefreshCw, MessageSquare, Plus
+  Coins, Wallet, ArrowRight, RefreshCw, MessageSquare, Plus, Video, MapPin, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { LeaveReviewModal } from "@/components/LeaveReviewModal";
-import { listMyEscrowTransactions, openEscrowDispute, releaseEscrowByPayer, submitEscrowProof } from "@/lib/supabase";
+import { listMyEscrowTransactions, openEscrowDispute, releaseEscrowByPayer, submitEscrowProof, updateEscrowMeetingDetails } from "@/lib/supabase";
 
 interface ExchangeItem {
   id: string;
@@ -33,6 +34,7 @@ interface ExchangeItem {
   status: "upcoming" | "pending" | "active" | "completed" | "cancelled" | "disputed";
   escrowStatus: "pending" | "submitted" | "verified" | "released" | "rejected";
   isPayer: boolean;
+  meetingDetails?: string;
 }
 
 const SAMPLE_EXCHANGES: ExchangeItem[] = [
@@ -53,6 +55,7 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
     status: "active",
     escrowStatus: "submitted",
     isPayer: true,
+    meetingDetails: "https://meet.google.com/ewu-swap-sprint",
   },
   {
     id: "ex-102",
@@ -118,6 +121,9 @@ export default function ExchangesPage() {
   const [selectedDisputeExId, setSelectedDisputeExId] = useState<string | null>(null);
   const [disputeReason, setDisputeReason] = useState("");
   const [reviewExchange, setReviewExchange] = useState<ExchangeItem | null>(null);
+  const [meetingInputs, setMeetingInputs] = useState<Record<string, string>>({});
+  const [isSavingMeeting, setIsSavingMeeting] = useState<Record<string, boolean>>({});
+  const [editingMeetingIds, setEditingMeetingIds] = useState<Record<string, boolean>>({});
 
   const loadExchanges = async () => {
     try {
@@ -145,6 +151,7 @@ export default function ExchangesPage() {
           status: row.dispute ? "disputed" : row.status === "released" ? "completed" : row.status === "rejected" ? "cancelled" : row.status === "pending" ? "pending" : "active",
           escrowStatus: row.status,
           isPayer: row.isPayer,
+          meetingDetails: row.meeting_details ?? undefined,
         };
       }));
     } catch (error: any) {
@@ -156,7 +163,43 @@ export default function ExchangesPage() {
 
   useEffect(() => {
     loadExchanges();
+    const handleUpdate = () => { void loadExchanges(); };
+    window.addEventListener("ss_exchanges_updated", handleUpdate);
+    return () => {
+      window.removeEventListener("ss_exchanges_updated", handleUpdate);
+    };
   }, []);
+
+  const handleSaveMeetingDetails = async (exchangeId: string) => {
+    const val = (meetingInputs[exchangeId] ?? "").trim();
+    if (!val) {
+      toast.error("Please enter a meeting link or campus meetup location.");
+      return;
+    }
+    setIsSavingMeeting((prev) => ({ ...prev, [exchangeId]: true }));
+    try {
+      await updateEscrowMeetingDetails(exchangeId, val);
+      toast.success("Meeting details saved and shared with the learner!");
+      setEditingMeetingIds((prev) => ({ ...prev, [exchangeId]: false }));
+      await loadExchanges();
+    } catch (err: any) {
+      toast.error(err?.message || "Could not save meeting details.");
+    } finally {
+      setIsSavingMeeting((prev) => ({ ...prev, [exchangeId]: false }));
+    }
+  };
+
+  const isWebUrl = (text?: string) => {
+    if (!text) return false;
+    const trimmed = text.trim();
+    return /^https?:\/\//i.test(trimmed) || /^(meet\.google\.com|zoom\.us|chat\.whatsapp\.com|teams\.microsoft\.com)/i.test(trimmed);
+  };
+
+  const getHref = (text: string) => {
+    const trimmed = text.trim();
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  };
 
   const handleReleaseFunds = async (exchange: ExchangeItem) => {
     try {
@@ -260,6 +303,134 @@ export default function ExchangesPage() {
                 </div>
               </div>
 
+              {/* Meeting Link Hand-off for Active / Pending Exchanges */}
+              {(ex.status === "active" || ex.status === "pending" || ex.status === "upcoming") && (
+                <div className="pt-1">
+                  {ex.isPayer ? (
+                    /* BUYER (STUDENT) VIEW */
+                    ex.meetingDetails ? (
+                      <div className="p-3.5 rounded-xl bg-gradient-to-r from-indigo-50/90 via-sky-50/80 to-emerald-50/90 dark:from-indigo-950/40 dark:via-sky-950/30 dark:to-emerald-950/40 border border-indigo-200/80 dark:border-indigo-800/60 space-y-2">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                              {isWebUrl(ex.meetingDetails) ? <Video className="w-4 h-4" /> : <MapPin className="w-4 h-4" />}
+                            </div>
+                            <div>
+                              <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-600 dark:text-indigo-400 block">
+                                Meeting Hand-Off Details
+                              </span>
+                              <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                {isWebUrl(ex.meetingDetails) ? "Live Online Session Link" : "On-Campus Meeting Location"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {isWebUrl(ex.meetingDetails) ? (
+                            <Button
+                              size="sm"
+                              asChild
+                              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/20 gap-1.5 h-8 px-3.5"
+                            >
+                              <a href={getHref(ex.meetingDetails)} target="_blank" rel="noreferrer">
+                                Join Session
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </Button>
+                          ) : (
+                            <Badge className="bg-indigo-600/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 text-xs px-2.5 py-1 font-bold">
+                              View Location Details
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="text-xs font-medium text-slate-800 dark:text-slate-200 bg-white/90 dark:bg-slate-900/90 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-950 break-all select-all flex items-center justify-between gap-2">
+                          <span className="truncate">{ex.meetingDetails}</span>
+                          {isWebUrl(ex.meetingDetails) && (
+                            <a href={getHref(ex.meetingDetails)} target="_blank" rel="noreferrer" className="text-indigo-600 hover:text-indigo-500 text-[11px] font-semibold shrink-0 flex items-center gap-1">
+                              Open Link <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <Clock className="w-4 h-4 text-amber-500 shrink-0" />
+                        <span>Awaiting instructor to share Google Meet / Zoom link or campus meeting location.</span>
+                      </div>
+                    )
+                  ) : (
+                    /* SELLER (INSTRUCTOR) VIEW */
+                    ex.meetingDetails && !editingMeetingIds[ex.id] ? (
+                      <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+                            {isWebUrl(ex.meetingDetails) ? <Video className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> : <MapPin className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
+                            Meeting Link / Location Shared With Learner:
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setMeetingInputs((prev) => ({ ...prev, [ex.id]: ex.meetingDetails || "" }));
+                              setEditingMeetingIds((prev) => ({ ...prev, [ex.id]: true }));
+                            }}
+                            className="h-6 text-[11px] px-2 text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                          >
+                            Edit Link
+                          </Button>
+                        </div>
+                        <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 px-3 py-2 rounded-lg border border-indigo-100 dark:border-indigo-950 flex items-center justify-between gap-2">
+                          <span className="truncate">{ex.meetingDetails}</span>
+                          {isWebUrl(ex.meetingDetails) && (
+                            <a href={getHref(ex.meetingDetails)} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline shrink-0 flex items-center gap-1">
+                              Test Link <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
+                            <Video className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                            Add Meeting Link / Location
+                          </span>
+                          {editingMeetingIds[ex.id] && ex.meetingDetails && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingMeetingIds((prev) => ({ ...prev, [ex.id]: false }))}
+                              className="h-6 text-[10px] px-2 text-slate-500"
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Paste your Google Meet / Zoom link, WhatsApp group, or campus meetup spot (e.g. EWU Library 3rd Floor) for the student.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                          <Input
+                            value={meetingInputs[ex.id] ?? (ex.meetingDetails || "")}
+                            onChange={(e) => setMeetingInputs((prev) => ({ ...prev, [ex.id]: e.target.value }))}
+                            placeholder="e.g. https://meet.google.com/xyz or EWU Library 2nd Floor..."
+                            className="text-xs bg-white dark:bg-slate-900 h-9"
+                          />
+                          <Button
+                            size="sm"
+                            disabled={isSavingMeeting[ex.id] || !(meetingInputs[ex.id] ?? ex.meetingDetails ?? "").trim()}
+                            onClick={() => handleSaveMeetingDetails(ex.id)}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-9 font-semibold shrink-0"
+                          >
+                            {isSavingMeeting[ex.id] ? "Saving..." : "Add Meeting Link / Location"}
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+
               {/* Date, Time & Escrow Quote info */}
               <div className="flex flex-wrap items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-2">
                 <div className="flex items-center gap-3">
@@ -285,7 +456,7 @@ export default function ExchangesPage() {
 
             {/* Actions for Active / Pending / Verified */}
             {(ex.status === "active" || ex.status === "upcoming" || ex.status === "pending") && (
-              <CardFooter className="px-4 py-3 bg-slate-50/50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <CardFooter className="px-4 py-3 bg-slate-50/50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
                 <Button
                   variant="outline"
                   size="sm"
@@ -297,15 +468,20 @@ export default function ExchangesPage() {
                 </Button>
 
                 {ex.isPayer && (
-                  <Button
-                    size="sm"
-                    onClick={() => handleReleaseFunds(ex)}
-                    disabled={ex.escrowStatus === "released" || ex.escrowStatus === "rejected"}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-1.5"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Confirm Satisfaction & Release ৳ {ex.netBdt} BDT
-                  </Button>
+                  <div className="flex flex-col items-end gap-1.5 sm:ml-auto">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium text-right">
+                      ⚠️ Only release funds after you have completed the session and learned the skill.
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={() => handleReleaseFunds(ex)}
+                      disabled={ex.escrowStatus === "released" || ex.escrowStatus === "rejected"}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-1.5"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Confirm Satisfaction & Release ৳ {ex.netBdt} BDT
+                    </Button>
+                  </div>
                 )}
               </CardFooter>
             )}
