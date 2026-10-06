@@ -337,7 +337,7 @@ export default function Dashboard() {
           </div>
 
           {/* Horizontal Scroll Flex Container */}
-          <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+          <div className="stagger-children flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
             {recommendedSkills.length === 0 ? (
               <p className="py-8 text-xs text-slate-500">No published services are available yet.</p>
             ) : recommendedSkills.map((skill) => (

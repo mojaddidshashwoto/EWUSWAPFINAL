@@ -509,7 +509,7 @@ export default function Discover() {
           {/* GRID OF SKILL CARDS */}
           <div className="md:col-span-3">
             {filteredListings.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="stagger-children grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5">
                 {filteredListings.map((skill) => (
                   <SkillCard key={skill.id} {...skill} onBook={handleBook} />
                 ))}

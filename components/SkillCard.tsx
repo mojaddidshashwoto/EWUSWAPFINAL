@@ -37,7 +37,7 @@ export function SkillCard({
   onBook,
 }: SkillCardProps) {
   return (
-    <Card className="w-[300px] sm:w-[320px] shrink-0 bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-indigo-500/50 dark:hover:border-indigo-500/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group">
+    <Card className="group w-[300px] shrink-0 overflow-hidden border-border/60 bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-xl sm:w-[320px]">
       <div>
         {/* Header Badges */}
         <div className="p-4 pb-2 flex items-center justify-between">
@@ -101,7 +101,7 @@ export function SkillCard({
         <Button
           size="sm"
           onClick={() => onBook?.(id)}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/20 gap-1 cursor-pointer"
+          className="gap-1 text-xs"
         >
           Book Swap
           <ArrowUpRight className="w-3.5 h-3.5" />

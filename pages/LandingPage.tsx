@@ -18,6 +18,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/ui/Logo";
 import { Badge } from "@/components/ui/badge";
 
 const TOP_SKILLS = [
@@ -74,15 +75,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-8 py-3.5">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center font-black text-lg shadow-md shadow-indigo-600/30 group-hover:scale-105 transition-transform">
-              E
-            </div>
-            <div>
-              <span className="text-lg font-black tracking-tight text-white">
-                Ewu<span className="text-indigo-400">Swap</span>
-              </span>
-              <span className="text-[10px] text-slate-400 block -mt-1 font-medium">Campus Skill Exchange</span>
-            </div>
+            <Logo size="md" tone="light" tagline className="transition-transform duration-300 group-hover:scale-[1.02]" />
           </Link>
 
           {/* Desktop Nav Links */}
@@ -410,7 +403,7 @@ export default function LandingPage() {
               <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
                 E
               </div>
-              <span className="text-base font-black text-white">EwuSwap</span>
+              <Logo size="sm" tone="light" />
             </div>
             <p className="text-[11px] text-slate-500 leading-relaxed">
               Peer-to-peer knowledge exchange and escrow marketplace designed for East West University students.
