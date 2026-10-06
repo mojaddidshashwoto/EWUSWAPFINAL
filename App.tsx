@@ -135,10 +135,12 @@ function Router() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="dark" switchable={true}>
         <AuthProvider>
           <TooltipProvider>
-            <Toaster position="bottom-right" />
+            {/* Cinematic Film Grain Overlay */}
+            <div className="fixed inset-0 pointer-events-none z-50 bg-grain opacity-25 mix-blend-overlay" />
+            <Toaster position="bottom-right" theme="dark" />
             <Router />
           </TooltipProvider>
         </AuthProvider>

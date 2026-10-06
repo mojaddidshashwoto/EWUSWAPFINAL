@@ -123,39 +123,100 @@
   border-color: rgba(99, 102, 241, 0.45);
 }
 
+@keyframes aurora-shift-1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
+  33% { transform: translate(60px, -45px) scale(1.15) rotate(15deg); }
+  66% { transform: translate(-40px, 50px) scale(0.9) rotate(-10deg); }
+}
+
+@keyframes aurora-shift-2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1) rotate(0deg); }
+  33% { transform: translate(-70px, 40px) scale(1.2) rotate(-20deg); }
+  66% { transform: translate(50px, -30px) scale(0.85) rotate(12deg); }
+}
+
+@keyframes aurora-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.8; }
+}
+
+.animate-aurora-1 {
+  animation: aurora-shift-1 22s ease-in-out infinite alternate;
+}
+
+.animate-aurora-2 {
+  animation: aurora-shift-2 26s ease-in-out infinite alternate;
+}
+
+.animate-aurora-pulse {
+  animation: aurora-pulse 10s ease-in-out infinite;
+}
+
+/* Cinematic Film Grain Texture */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+/* VisionOS / Spatial Frosted Glass Panel */
+.spatial-panel {
+  position: relative;
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.spatial-panel:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 35px 70px -15px rgba(0, 0, 0, 0.85), inset 0 1px 0 0 rgba(255, 255, 255, 0.18);
+}
+
+/* Luminous Glow CTAs */
+.luminous-glow {
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.35), 0 0 15px rgba(53, 169, 133, 0.25);
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+
+.luminous-glow:hover {
+  box-shadow: 0 0 45px rgba(99, 102, 241, 0.55), 0 0 25px rgba(53, 169, 133, 0.45);
+}
+
 :root {
-  --navy: #202342;
-  --navy-2: #30355d;
-  --ink: #242641;
-  --muted-ink: #747991;
-  --line: #e4e6f0;
-  --wash: #f5f6fb;
-  --blue: #5c55e9;
-  --blue-soft: #eeedff;
-  --coral: #e97767;
-  --coral-soft: #fff0ec;
-  --mint: #35a985;
-  --mint-soft: #e6f6f0;
-  --amber: #d99b42;
-  --amber-soft: #fff5e5;
+  --navy: #eff0ff;
+  --navy-2: #d9dcff;
+  --ink: #f3f4f6;
+  --muted-ink: #9ca3af;
+  --line: rgba(255, 255, 255, 0.08);
+  --wash: #0a0a0b;
+  --blue: #6366f1;
+  --blue-soft: rgba(99, 102, 241, 0.15);
+  --coral: #f43f5e;
+  --coral-soft: rgba(244, 63, 94, 0.15);
+  --mint: #10b981;
+  --mint-soft: rgba(16, 185, 129, 0.15);
+  --amber: #f59e0b;
+  --amber-soft: rgba(245, 158, 11, 0.15);
   --radius: 1rem;
-  --primary: #5c55e9;
-  --primary-foreground: white;
-  --background: #f8f9fc;
-  --foreground: var(--ink);
-  --card: white;
-  --card-foreground: var(--ink);
-  --popover: white;
-  --popover-foreground: var(--ink);
-  --secondary: #eff0fa;
-  --secondary-foreground: var(--ink);
-  --muted: #f1f2f8;
-  --muted-foreground: var(--muted-ink);
-  --accent: #efefff;
-  --accent-foreground: var(--ink);
-  --border: var(--line);
-  --input: #dfe2ef;
-  --ring: #756ef0;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+  --background: #0a0a0b;
+  --foreground: #f3f4f6;
+  --card: rgba(255, 255, 255, 0.025);
+  --card-foreground: #f3f4f6;
+  --popover: #0e0f14;
+  --popover-foreground: #f3f4f6;
+  --secondary: rgba(255, 255, 255, 0.05);
+  --secondary-foreground: #f3f4f6;
+  --muted: rgba(255, 255, 255, 0.04);
+  --muted-foreground: #9ca3af;
+  --accent: rgba(255, 255, 255, 0.07);
+  --accent-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #6366f1;
 }
 
 * { box-sizing: border-box; }
@@ -182,37 +243,37 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .dark {
   --navy: #eff0ff;
   --navy-2: #d9dcff;
-  --ink: #e8e9f5;
-  --muted-ink: #9ca0b5;
-  --line: #2b2e43;
-  --wash: #111321;
-  --blue: #918cff;
-  --blue-soft: rgba(145,140,255,.14);
-  --coral: #ff9b87;
-  --coral-soft: rgba(255,155,135,.12);
-  --mint: #68d0ae;
-  --mint-soft: rgba(104,208,174,.12);
-  --amber: #edb968;
-  --amber-soft: rgba(237,185,104,.12);
-  --background: #111321;
-  --foreground: #e8e9f5;
-  --card: #191b2c;
-  --card-foreground: #e8e9f5;
-  --popover: #191b2c;
-  --popover-foreground: #e8e9f5;
-  --secondary: #202238;
-  --secondary-foreground: #e8e9f5;
-  --muted: #202238;
-  --muted-foreground: #9ca0b5;
-  --accent: #292842;
-  --accent-foreground: #e8e9f5;
-  --border: #2b2e43;
-  --input: #34374e;
-  --ring: #918cff;
-  --primary: var(--blue);
-  --primary-foreground: #0b1920;
+  --ink: #f3f4f6;
+  --muted-ink: #9ca3af;
+  --line: rgba(255, 255, 255, 0.08);
+  --wash: #0a0a0b;
+  --blue: #6366f1;
+  --blue-soft: rgba(99, 102, 241, 0.15);
+  --coral: #f43f5e;
+  --coral-soft: rgba(244, 63, 94, 0.15);
+  --mint: #10b981;
+  --mint-soft: rgba(16, 185, 129, 0.15);
+  --amber: #f59e0b;
+  --amber-soft: rgba(245, 158, 11, 0.15);
+  --background: #0a0a0b;
+  --foreground: #f3f4f6;
+  --card: rgba(255, 255, 255, 0.025);
+  --card-foreground: #f3f4f6;
+  --popover: #0e0f14;
+  --popover-foreground: #f3f4f6;
+  --secondary: rgba(255, 255, 255, 0.05);
+  --secondary-foreground: #f3f4f6;
+  --muted: rgba(255, 255, 255, 0.04);
+  --muted-foreground: #9ca3af;
+  --accent: rgba(255, 255, 255, 0.07);
+  --accent-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #6366f1;
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
 }
-.dark .app-frame { background: linear-gradient(180deg, #0b1920 0%, #0e1f29 100%); }
+.dark .app-frame { background: #0a0a0b; }
 .dark .topbar { background: rgba(11,25,32,.92); border-bottom-color: rgba(30,51,64,.82); }
 .dark .main-nav button:hover, .dark .main-nav button.nav-active { color: var(--navy); background: rgba(255,255,255,.06); }
 .dark .icon-button:hover { background: rgba(255,255,255,.06); color: var(--navy); }

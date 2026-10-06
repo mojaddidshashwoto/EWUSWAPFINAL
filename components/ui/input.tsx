@@ -54,8 +54,8 @@ function Input({
       type={type}
       data-slot="input"
       className={cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-border/70 h-10 w-full min-w-0 rounded-xl border bg-muted/30 px-3.5 py-2 text-sm shadow-xs transition-all duration-200 outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-        "focus-visible:border-ring/70 focus-visible:bg-background focus-visible:ring-ring/20 focus-visible:ring-4",
+        "file:text-foreground placeholder:text-zinc-500 selection:bg-indigo-500 selection:text-white border-white/10 h-10 w-full min-w-0 rounded-xl border bg-transparent px-3.5 py-2 text-sm text-white shadow-xs transition-all duration-300 outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40 md:text-sm hover:border-white/20",
+        "focus-visible:border-indigo-400/80 focus-visible:bg-white/[0.035] focus-visible:ring-2 focus-visible:ring-indigo-500/35 focus-visible:shadow-[0_0_25px_rgba(99,102,241,0.25)]",
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         className
       )}

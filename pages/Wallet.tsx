@@ -226,18 +226,18 @@ export default function WalletPage() {
           </div>
         </div>
 
-        {/* TOP SUMMARY CARDS */}
+        {/* TOP SUMMARY CARDS - Spatial Frosted Glass */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* 1. Available Balance with Quick Buttons */}
-          <Card className="card-hover-3d bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white border-indigo-800/40 shadow-xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+          <Card className="card-hover-3d bg-white/[0.025] backdrop-blur-3xl text-white border-white/10 shadow-2xl overflow-hidden relative hover:border-white/20">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
             <CardHeader className="pb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Available Wallet Balance</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">Available Wallet Balance</span>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-white">৳ {userBdt.toLocaleString()} BDT</span>
+                  <span className="text-3xl sm:text-4xl font-black tracking-tighter text-emerald-400">৳ {userBdt.toLocaleString()} BDT</span>
                 </div>
                 <p className="text-xs text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -246,10 +246,10 @@ export default function WalletPage() {
               </div>
 
               {/* In-Card Quick Buttons */}
-              <div className="pt-2 border-t border-indigo-800/50 flex items-center gap-2">
+              <div className="pt-2 border-t border-white/10 flex items-center gap-2">
                 <button
                   disabled
-                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/5 text-white/60 text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-not-allowed opacity-75"
+                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/[0.04] text-white/60 text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-not-allowed opacity-75 border border-white/5"
                   title="bKash/Nagad top-up gateway coming soon"
                 >
                   <PlusCircle className="w-3.5 h-3.5 text-emerald-400/70" />
@@ -260,7 +260,7 @@ export default function WalletPage() {
                 </button>
                 <button
                   disabled
-                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/5 text-white/60 text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-not-allowed opacity-75"
+                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/[0.04] text-white/60 text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-not-allowed opacity-75 border border-white/5"
                   title="Cashout payout coming soon"
                 >
                   <Smartphone className="w-3.5 h-3.5 text-orange-400/70" />
@@ -274,38 +274,38 @@ export default function WalletPage() {
           </Card>
 
           {/* 2. Pending in Escrow */}
-          <Card className="card-hover-3d bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <Card className="card-hover-3d bg-white/[0.025] backdrop-blur-3xl border-white/10 shadow-2xl text-white hover:border-white/20">
             <CardHeader className="pb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Pending in Escrow</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Pending in Escrow</span>
             </CardHeader>
             <CardContent className="space-y-1">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-slate-900 dark:text-white">৳ {pendingEscrowBdt.toLocaleString()} BDT</span>
+                <span className="text-3xl sm:text-4xl font-black tracking-tighter text-white">৳ {pendingEscrowBdt.toLocaleString()} BDT</span>
               </div>
-              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+              <p className="text-xs text-amber-400 font-medium flex items-center gap-1">
                 <LockKeyhole className="w-3.5 h-3.5" />
                 Reserved in Active Exchanges
               </p>
-              <p className="text-[10px] text-slate-400 mt-2">
+              <p className="text-[10px] text-zinc-500 mt-2 font-medium">
                 Secured in smart escrow until exchange completion notes are confirmed.
               </p>
             </CardContent>
           </Card>
 
           {/* 3. Lifetime Earned */}
-          <Card className="card-hover-3d bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <Card className="card-hover-3d bg-white/[0.025] backdrop-blur-3xl border-white/10 shadow-2xl text-white hover:border-white/20">
             <CardHeader className="pb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Lifetime Earned</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Lifetime Earned</span>
             </CardHeader>
             <CardContent className="space-y-1">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-slate-900 dark:text-white">৳ {lifetimeEarnedBdt.toLocaleString()} BDT</span>
+                <span className="text-3xl sm:text-4xl font-black tracking-tighter text-white">৳ {lifetimeEarnedBdt.toLocaleString()} BDT</span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+              <p className="text-xs text-zinc-400 font-medium flex items-center gap-1">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
                 Net Settled to Wallet
               </p>
-              <p className="text-[10px] text-slate-400 mt-2">
+              <p className="text-[10px] text-zinc-500 mt-2 font-medium">
                 Calculated from released provider transactions on your account.
               </p>
             </CardContent>

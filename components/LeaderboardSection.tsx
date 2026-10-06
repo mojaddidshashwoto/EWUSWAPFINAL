@@ -54,42 +54,43 @@ export function LeaderboardSection() {
   };
 
   return (
-    <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
+    <Card className="bg-white/[0.025] backdrop-blur-3xl border-white/10 shadow-2xl hover:border-white/20">
       <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-500">
+          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Campus Hall of Fame</span>
+          <div className="flex items-center gap-2 mt-0.5">
+            <div className="p-1.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Award className="w-5 h-5" />
             </div>
-            <CardTitle className="text-lg font-bold text-slate-900 dark:text-white">Top Service Providers</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-black tracking-tight text-white">Top Service Providers</CardTitle>
           </div>
-          <CardDescription className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          <CardDescription className="text-xs text-zinc-400 mt-1">
             Ranked by average ratings, completed exchanges, and positive review sentiment.
           </CardDescription>
         </div>
 
-        {/* Filter buttons */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl text-xs">
+        {/* Filter buttons - Frosted Pills */}
+        <div className="flex items-center gap-1 bg-white/[0.03] border border-white/10 p-1 rounded-xl text-xs backdrop-blur-md">
           <button
             onClick={() => setFilter("rank")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all ${
-              filter === "rank" ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+            className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+              filter === "rank" ? "bg-white/[0.1] text-white shadow-xs border border-white/15" : "text-zinc-400 hover:text-white"
             }`}
           >
             Overall Rank
           </button>
           <button
             onClick={() => setFilter("rating")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all ${
-              filter === "rating" ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+            className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+              filter === "rating" ? "bg-white/[0.1] text-white shadow-xs border border-white/15" : "text-zinc-400 hover:text-white"
             }`}
           >
             Ratings
           </button>
           <button
             onClick={() => setFilter("services")}
-            className={`px-3 py-1 rounded-lg font-medium transition-all ${
-              filter === "services" ? "bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+            className={`px-3 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+              filter === "services" ? "bg-white/[0.1] text-white shadow-xs border border-white/15" : "text-zinc-400 hover:text-white"
             }`}
           >
             Services
@@ -97,13 +98,15 @@ export function LeaderboardSection() {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3">
-        {isLoading ? <p className="py-6 text-center text-xs text-slate-500">Loading provider rankings...</p> : sortedLeaderboard.length === 0 ? (
-          <p className="py-6 text-center text-xs text-slate-500">No provider rankings are available yet.</p>
+      <CardContent className="space-y-2.5">
+        {isLoading ? (
+          <p className="py-6 text-center text-xs text-zinc-500">Loading provider rankings...</p>
+        ) : sortedLeaderboard.length === 0 ? (
+          <p className="py-6 text-center text-xs text-zinc-500">No provider rankings are available yet.</p>
         ) : sortedLeaderboard.map((item) => (
           <div
             key={item.providerId}
-            className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/40 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-white/15 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
           >
             <div className="flex items-center gap-3">
               <div className="w-8 text-center shrink-0">
@@ -112,35 +115,35 @@ export function LeaderboardSection() {
               <img
                 src={item.avatarUrl}
                 alt={item.displayName}
-                className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                className="w-10 h-10 rounded-full object-cover border border-white/15"
               />
               <div>
                 <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">{item.displayName}</h4>
-                  {item.isVerified && <ShieldCheck className="w-4 h-4 text-indigo-500 shrink-0" />}
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
+                  <h4 className="text-sm font-bold text-white">{item.displayName}</h4>
+                  {item.isVerified && <ShieldCheck className="w-4 h-4 text-indigo-400 shrink-0" />}
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-bold uppercase tracking-wider border border-emerald-500/25">
                     {item.availabilityStatus}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  <span className="flex items-center gap-1 text-amber-500 font-semibold">
+                <div className="flex items-center gap-3 text-xs text-zinc-400 mt-0.5">
+                  <span className="flex items-center gap-1 text-amber-400 font-semibold">
                     <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                     {item.averageRating.toFixed(2)} ({item.reviewCount} reviews)
                   </span>
                   <span>•</span>
-                  <span>{item.completedServicesCount} exchanges completed</span>
+                  <span className="text-zinc-400">{item.completedServicesCount} exchanges completed</span>
                 </div>
               </div>
             </div>
 
             {/* Sentiment Score Indicator */}
-            <div className="flex items-center gap-2 sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200/60 dark:border-slate-800">
+            <div className="flex items-center gap-2 sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-white/5">
               <div className="space-y-0.5">
-                <div className="flex items-center gap-1 text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+                <div className="flex items-center gap-1 text-xs font-black text-emerald-400">
                   <TrendingUp className="w-3.5 h-3.5" />
                   <span>{item.sentimentScore}% Positive</span>
                 </div>
-                <p className="text-[10px] text-slate-400">Review Sentiment Score</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Review Sentiment Score</p>
               </div>
             </div>
           </div>

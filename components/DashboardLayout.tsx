@@ -139,12 +139,37 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return location === path;
   };
 
+  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
+  const handleLayoutMouseMove = (e: React.MouseEvent) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
-      {/* DESKTOP SIDEBAR */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-border/70 bg-card sticky top-0 h-screen z-30 shadow-sm">
+    <div
+      onMouseMove={handleLayoutMouseMove}
+      className="min-h-screen bg-[#0a0a0b] text-foreground flex flex-col md:flex-row relative selection:bg-indigo-500/30 selection:text-white"
+    >
+      {/* Living Deep Space Aurora Mesh Background */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        {/* Blob 1: Cosmic Purple & Indigo */}
+        <div className="absolute -top-[25%] -left-[10%] w-[65vw] h-[65vw] rounded-full bg-gradient-to-br from-indigo-900/30 via-purple-900/20 to-transparent blur-[140px] animate-aurora-1" />
+        {/* Blob 2: Oceanic Blue */}
+        <div className="absolute top-[25%] -right-[15%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-bl from-sky-900/25 via-blue-950/20 to-transparent blur-[150px] animate-aurora-2" />
+        {/* Blob 3: Neon Mint & Emerald Pulse */}
+        <div className="absolute -bottom-[20%] left-[20%] w-[55vw] h-[55vw] rounded-full bg-gradient-to-tr from-emerald-950/30 via-teal-900/15 to-transparent blur-[130px] animate-aurora-pulse" />
+        {/* Dynamic Global Mouse Spotlight Follower */}
+        <div
+          className="absolute w-[500px] h-[500px] rounded-full bg-radial from-indigo-500/10 via-emerald-500/05 to-transparent blur-[110px] pointer-events-none transition-transform duration-100 ease-out will-change-transform opacity-70"
+          style={{
+            transform: `translate(${mousePos.x - 250}px, ${mousePos.y - 250}px)`,
+          }}
+        />
+      </div>
+
+      {/* DESKTOP SIDEBAR - Spatial Frosted Glass Panel */}
+      <aside className="hidden md:flex flex-col w-64 border-r border-white/10 bg-black/40 backdrop-blur-3xl sticky top-0 h-screen z-30 shadow-2xl">
         {/* Logo / Brand */}
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="p-5 border-b border-white/10 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2 group">
             <Logo size="md" tagline className="transition-transform duration-300 group-hover:scale-[1.02]" />
           </Link>
@@ -152,10 +177,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Navigation Items */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center justify-between">
             <span>Main Menu</span>
             {isAdminOrMod && (
-              <span className="text-[9px] font-bold text-rose-500 uppercase">Staff Mode</span>
+              <span className="text-[9px] font-bold text-rose-400 uppercase tracking-wider">Staff Mode</span>
             )}
           </div>
           {navItems.map((item) => {
@@ -167,14 +192,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Link
                 key={item.path}
                 href={item.path}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                   active
                     ? isSpecialAdmin
-                      ? "bg-rose-600 text-white shadow-md shadow-rose-600/20"
-                      : "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                      ? "bg-rose-500/20 text-rose-300 border border-rose-500/30 shadow-[0_0_20px_rgba(244,63,94,0.3)]"
+                      : "bg-white/[0.08] text-white border border-white/15 shadow-[0_0_25px_rgba(99,102,241,0.25)]"
                     : isSpecialAdmin
-                    ? "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-white"
+                    ? "text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+                    : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -183,20 +208,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       active
                         ? "text-white"
                         : isSpecialAdmin
-                        ? "text-rose-500"
-                        : "text-slate-500 dark:text-slate-400"
+                        ? "text-rose-400"
+                        : "text-zinc-400"
                     }`}
                   />
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
                   <span
-                    className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                    className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
                       active
                         ? "bg-white/20 text-white"
                         : isSpecialAdmin
-                        ? "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800"
-                        : "bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800"
+                        ? "bg-rose-950 text-rose-300 border border-rose-800"
+                        : "bg-indigo-950/80 text-indigo-300 border border-indigo-800/80"
                     }`}
                   >
                     {item.badge}
@@ -208,8 +233,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </nav>
 
         {/* Sidebar Footer User Card with Role Badge */}
-        <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
-          <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        <div className="p-3 border-t border-white/10 bg-white/[0.015]">
+          <div className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] border border-white/10 shadow-xs hover:border-white/20 transition-colors">
             <Link href="/profile" className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity">
               <img
                 src={user.avatarUrl}
@@ -217,7 +242,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 className="w-9 h-9 rounded-full object-cover border border-indigo-500/30 shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-slate-900 dark:text-white truncate flex items-center gap-1">
+                <p className="text-xs font-bold text-white truncate flex items-center gap-1">
                   {user.displayName}
                   {isAdminOrMod ? (
                     <Badge className="bg-rose-500 text-[8px] px-1 py-0 h-3.5 uppercase font-black">
@@ -227,13 +252,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     user.isVerified && <Badge className="bg-indigo-500 text-[9px] px-1 py-0 h-3.5">✓</Badge>
                   )}
                 </p>
-                <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+                <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
               </div>
             </Link>
             <button
               onClick={handleLogout}
               title="Logout"
-              className="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg transition-colors shrink-0"
+              className="text-zinc-500 hover:text-rose-400 p-1.5 rounded-lg transition-colors shrink-0"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -243,18 +268,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
-        {/* TOP HEADER */}
-        <header className="sticky top-0 z-20 bg-background/85 backdrop-blur-xl border-b border-border/70 px-4 md:px-8 py-3 flex items-center justify-between gap-4">
+        {/* TOP HEADER - Spatial Frosted Glass */}
+        <header className="sticky top-0 z-20 bg-black/40 backdrop-blur-3xl border-b border-white/10 px-4 md:px-8 py-3 flex items-center justify-between gap-4">
           {/* Mobile Header Brand & Hamburger */}
           <div className="flex items-center gap-3 md:hidden">
             <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-slate-600 dark:text-slate-300">
+                <Button variant="ghost" size="icon" className="text-zinc-300 hover:text-white">
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 bg-white dark:bg-slate-900 p-0 border-r border-slate-200 dark:border-slate-800">
-                <SheetHeader className="p-5 border-b border-slate-100 dark:border-slate-800">
+              <SheetContent side="left" className="w-72 bg-[#0a0a0b]/95 backdrop-blur-3xl p-0 border-r border-white/10 text-white">
+                <SheetHeader className="p-5 border-b border-white/10">
                   <SheetTitle className="flex items-center gap-2 text-left">
                     <Logo size="sm" />
                   </SheetTitle>
@@ -269,14 +294,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         key={item.path}
                         href={item.path}
                         onClick={() => setMobileDrawerOpen(false)}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold ${
+                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                           active
                             ? isSpecialAdmin
-                              ? "bg-rose-600 text-white"
-                              : "bg-indigo-600 text-white"
+                              ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                              : "bg-white/[0.08] text-white border border-white/15"
                             : isSpecialAdmin
-                            ? "text-rose-600 hover:bg-rose-50"
-                            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            ? "text-rose-400 hover:bg-rose-500/10"
+                            : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -286,7 +311,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         {item.badge && (
                           <span
                             className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                              isSpecialAdmin ? "bg-rose-100 text-rose-700" : "bg-indigo-100 text-indigo-600"
+                              isSpecialAdmin ? "bg-rose-950 text-rose-300" : "bg-indigo-950 text-indigo-300"
                             }`}
                           >
                             {item.badge}
@@ -304,15 +329,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Link>
           </div>
 
-          {/* Search Bar */}
+          {/* Search Bar with zero background & glowing focus */}
           <div className="hidden sm:flex items-center flex-1 max-w-md relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-500 pointer-events-none" />
             <Input
               type="text"
               placeholder="Search skills, providers, courses (e.g. Figma, Python)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-slate-100/70 dark:bg-slate-950/70 border-slate-200 dark:border-slate-800 text-xs rounded-xl focus-visible:ring-indigo-500"
+              className="pl-9 text-xs rounded-xl"
             />
           </div>
 
@@ -320,36 +345,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center gap-3">
             <Link
               href="/wallet"
-              className="flex items-center gap-2 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800 text-xs font-bold hover:border-indigo-400/50 transition-colors"
+              className="flex items-center gap-2 bg-white/[0.03] p-1.5 rounded-xl border border-white/10 text-xs font-bold hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.25)] transition-all"
             >
-              <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 px-2 py-0.5">
+              <div className="flex items-center gap-1.5 text-emerald-400 px-2 py-0.5">
                 <Wallet className="w-3.5 h-3.5" />
-                <span>৳ {user.bdtBalance.toLocaleString()}</span>
-                <span className="text-[10px] font-normal text-slate-400 hidden lg:inline">BDT</span>
+                <span className="font-extrabold tracking-tight">৳ {user.bdtBalance.toLocaleString()}</span>
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest hidden lg:inline">BDT</span>
               </div>
             </Link>
 
             {/* Notification Bell */}
             <Link
               href="/notifications"
-              className="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 transition-colors"
+              className="relative p-2 rounded-xl bg-white/[0.03] border border-white/10 text-zinc-400 hover:text-white hover:border-white/25 transition-all"
             >
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-[#0a0a0b]" />
             </Link>
 
             {/* User Profile Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 p-1 rounded-full hover:ring-2 hover:ring-indigo-500/30 transition-all outline-none">
+                <button className="flex items-center gap-2 p-0.5 rounded-full hover:ring-2 hover:ring-indigo-500/40 transition-all outline-none cursor-pointer">
                   <img
                     src={user.avatarUrl}
                     alt={user.displayName}
-                    className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+                    className="w-8 h-8 rounded-full object-cover border border-white/15"
                   />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+              <DropdownMenuContent align="end" className="w-56 bg-[#0e0f14]/95 backdrop-blur-3xl border-white/10 text-white">
                 <DropdownMenuLabel className="font-semibold text-xs">
                   <div className="flex items-center justify-between">
                     <span>{user.displayName}</span>
@@ -357,42 +382,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       {user.role}
                     </Badge>
                   </div>
-                  <div className="text-[10px] font-normal text-slate-400 truncate">{user.email}</div>
+                  <div className="text-[10px] font-normal text-zinc-400 truncate">{user.email}</div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-white/10" />
 
                 {/* Staff Admin Panel Link */}
                 {isAdminOrMod && (
                   <>
                     <DropdownMenuItem
                       onClick={() => setLocation("/admin")}
-                      className="text-xs font-bold text-rose-600 dark:text-rose-400 cursor-pointer bg-rose-50/50 dark:bg-rose-950/30 hover:bg-rose-100"
+                      className="text-xs font-bold text-rose-400 cursor-pointer bg-rose-950/30 hover:bg-rose-900/40"
                     >
-                      <ShieldAlert className="w-4 h-4 mr-2 text-rose-600 dark:text-rose-400" />
+                      <ShieldAlert className="w-4 h-4 mr-2 text-rose-400" />
                       Admin Dashboard
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className="bg-white/10" />
                   </>
                 )}
 
-                <DropdownMenuItem onClick={() => setLocation("/profile")} className="text-xs cursor-pointer">
-                  <User className="w-4 h-4 mr-2 text-indigo-500" />
+                <DropdownMenuItem onClick={() => setLocation("/profile")} className="text-xs cursor-pointer hover:bg-white/[0.06]">
+                  <User className="w-4 h-4 mr-2 text-indigo-400" />
                   My Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/wallet")} className="text-xs cursor-pointer">
-                  <Wallet className="w-4 h-4 mr-2 text-emerald-500" />
+                <DropdownMenuItem onClick={() => setLocation("/wallet")} className="text-xs cursor-pointer hover:bg-white/[0.06]">
+                  <Wallet className="w-4 h-4 mr-2 text-emerald-400" />
                   Wallet (bKash/Nagad)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/onboarding")} className="text-xs cursor-pointer">
-                  <Sparkles className="w-4 h-4 mr-2 text-amber-500" />
+                <DropdownMenuItem onClick={() => setLocation("/onboarding")} className="text-xs cursor-pointer hover:bg-white/[0.06]">
+                  <Sparkles className="w-4 h-4 mr-2 text-amber-400" />
                   Re-run Onboarding
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/settings")} className="text-xs cursor-pointer">
-                  <Settings className="w-4 h-4 mr-2 text-slate-500" />
+                <DropdownMenuItem onClick={() => setLocation("/settings")} className="text-xs cursor-pointer hover:bg-white/[0.06]">
+                  <Settings className="w-4 h-4 mr-2 text-zinc-400" />
                   Settings & Security
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-xs text-rose-500 cursor-pointer">
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem onClick={handleLogout} className="text-xs text-rose-400 cursor-pointer hover:bg-rose-950/30">
                   <LogOut className="w-4 h-4 mr-2" />
                   Log Out
                 </DropdownMenuItem>
@@ -407,8 +432,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </main>
       </div>
 
-      {/* MOBILE BOTTOM NAVIGATION BAR */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/90 backdrop-blur-xl border-t border-border/70 flex items-center justify-around py-2 px-1">
+      {/* MOBILE BOTTOM NAVIGATION BAR - Spatial Glass */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#0a0a0b]/85 backdrop-blur-3xl border-t border-white/10 flex items-center justify-around py-2 px-1">
         {MOBILE_CORE_ITEMS.map((item) => {
           const active = isCurrentPath(item.path);
           const IconComponent = item.icon;
@@ -417,7 +442,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               key={item.path}
               href={item.path}
               className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all ${
-                active ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-400 hover:text-slate-600"
+                active ? "text-indigo-400 font-bold" : "text-zinc-400 hover:text-white"
               }`}
             >
               <IconComponent className="w-5 h-5" />

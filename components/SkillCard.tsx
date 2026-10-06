@@ -1,7 +1,7 @@
 import { Star, Clock, Coins, Wallet, ShieldCheck, ArrowUpRight, Settings, MapPin, Video } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, MagneticButton } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface SkillCardProps {
@@ -50,27 +50,27 @@ export function SkillCard({
   const isOnCampus = deliveryMode === "on_campus" || deliveryMode === "On-Campus" || deliveryMode === "Offline";
 
   return (
-    <Card className="group w-[300px] shrink-0 overflow-hidden border-border/70 bg-card shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-indigo-400 dark:hover:border-indigo-500/70 hover:shadow-[0_20px_40px_-10px_rgba(99,102,241,0.25),0_0_20px_-3px_rgba(16,185,129,0.15)] sm:w-[320px] relative will-change-transform">
+    <Card className="group w-[300px] shrink-0 overflow-hidden border-white/10 bg-white/[0.025] backdrop-blur-3xl shadow-xl transition-all duration-300 hover:-translate-y-2 hover:border-white/25 hover:shadow-[0_25px_50px_-10px_rgba(99,102,241,0.35),0_0_25px_rgba(16,185,129,0.2)] sm:w-[320px] relative will-change-transform">
       <div>
         {/* Header Badges */}
         <div className="p-4 pb-2 flex items-center justify-between gap-1.5 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-semibold">
+            <Badge variant="secondary" className="bg-white/[0.05] text-zinc-300 border-white/10 text-[9px] font-bold uppercase tracking-widest">
               {category}
             </Badge>
             {isOnCampus ? (
-              <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-[10px] font-bold flex items-center gap-1">
+              <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
                 <MapPin className="w-2.5 h-2.5" />
                 On-Campus
               </Badge>
             ) : (
-              <Badge className="bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/30 text-[10px] font-bold flex items-center gap-1">
+              <Badge className="bg-sky-500/15 text-sky-300 border-sky-500/30 text-[9px] font-black uppercase tracking-wider flex items-center gap-1">
                 <Video className="w-2.5 h-2.5" />
                 Online
               </Badge>
             )}
           </div>
-          <Badge className={`text-[10px] font-semibold ${mode === "swap" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" : "bg-indigo-500/10 text-indigo-600 border-indigo-500/30"}`}>
+          <Badge className={`text-[9px] font-black uppercase tracking-wider ${mode === "swap" ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"}`}>
             {type}
           </Badge>
         </div>
@@ -81,47 +81,47 @@ export function SkillCard({
             <img
               src={providerAvatar}
               alt={providerName}
-              className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
+              className="w-8 h-8 rounded-full object-cover border border-white/15"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold text-slate-900 dark:text-white truncate flex items-center gap-1">
+              <p className="text-xs font-bold text-white truncate flex items-center gap-1">
                 {providerName}
-                {isVerified && <ShieldCheck className="w-3.5 h-3.5 text-indigo-500 shrink-0" />}
+                {isVerified && <ShieldCheck className="w-3.5 h-3.5 text-indigo-400 shrink-0" />}
               </p>
-              <div className="flex items-center gap-1 text-[10px] text-amber-500 font-semibold">
+              <div className="flex items-center gap-1 text-[10px] text-amber-400 font-semibold">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                 <span>{rating.toFixed(1)}</span>
-                <span className="text-slate-400 font-normal">({reviewsCount})</span>
+                <span className="text-zinc-500 font-normal">({reviewsCount})</span>
               </div>
             </div>
           </div>
 
-          {/* Title & Description */}
+          {/* Title & Description with Extreme Contrast */}
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
+            <h3 className="text-sm font-black tracking-tight text-white group-hover:text-indigo-400 transition-colors line-clamp-1">
               {title}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+            <p className="text-xs text-zinc-400 line-clamp-2 mt-1 leading-relaxed font-normal">
               {description}
             </p>
           </div>
 
           {/* Duration info */}
-          <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-            <Clock className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1 text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+            <Clock className="w-3.5 h-3.5 text-zinc-400" />
             <span>{duration} session</span>
           </div>
         </CardContent>
       </div>
 
       {/* Footer Price & Booking CTA */}
-      <CardFooter className="px-4 py-3 bg-slate-50/60 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+      <CardFooter className="px-4 py-3 bg-white/[0.015] border-t border-white/10 flex items-center justify-between">
         <div className="space-y-0.5">
-          <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">
-            <Wallet className="w-4 h-4" />
+          <div className="flex items-center gap-1 text-emerald-400 font-black text-sm tracking-tight">
+            <Wallet className="w-4 h-4 text-emerald-400" />
             <span>৳ {bdtCost.toLocaleString()} BDT</span>
           </div>
-          <p className="text-[10px] text-slate-400">Escrow Protected</p>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Escrow Protected</p>
         </div>
 
         {isOwner ? (
@@ -129,20 +129,20 @@ export function SkillCard({
             size="sm"
             variant="outline"
             onClick={() => onManage ? onManage(id) : onBook?.(id)}
-            className="gap-1 text-xs border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50"
+            className="gap-1 text-xs border-white/10 text-zinc-300 hover:text-white hover:bg-white/[0.08]"
           >
             <Settings className="w-3.5 h-3.5" />
             Manage
           </Button>
         ) : (
-          <Button
+          <MagneticButton
             size="sm"
             onClick={() => onBook?.(id)}
-            className="gap-1 text-xs"
+            className="gap-1 text-xs font-bold shadow-[0_0_20px_rgba(99,102,241,0.35)] hover:shadow-[0_0_30px_rgba(53,169,133,0.45)]"
           >
             Book Swap
             <ArrowUpRight className="w-3.5 h-3.5" />
-          </Button>
+          </MagneticButton>
         )}
       </CardFooter>
     </Card>

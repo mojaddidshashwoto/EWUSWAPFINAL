@@ -5,7 +5,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { SkillCard, SkillCardProps } from "@/components/SkillCard";
 import { LeaderboardSection } from "@/components/LeaderboardSection";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, MagneticButton } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Coins, Wallet, Plus, Calendar, Clock, ArrowRight, Sparkles, TrendingUp,
@@ -216,54 +216,54 @@ export default function Dashboard() {
         animate="visible"
         className="space-y-8"
       >
-        {/* 1. THE LIVING HERO SECTION */}
+        {/* 1. THE LIVING HERO SECTION - Deep Space Spatial Glass */}
         <motion.div
           variants={itemVariants}
-          className="relative rounded-3xl overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl p-6 sm:p-10 bg-slate-950/85 backdrop-blur-2xl text-white"
+          className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl p-6 sm:p-10 bg-white/[0.025] backdrop-blur-3xl text-white"
         >
           {/* Animated Mesh Gradient Background Layer */}
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/90 via-slate-950 to-slate-900/90 opacity-95 -z-20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/70 via-black to-slate-950/80 opacity-90 -z-20" />
 
           {/* Drifting Floating Blurred Gradient Orbs */}
           {/* Orb 1: Deep Indigo / Violet */}
-          <div className="absolute -top-24 -left-20 w-96 h-96 rounded-full bg-gradient-to-br from-indigo-600/40 to-purple-600/35 blur-[95px] animate-float-1 pointer-events-none -z-10" />
+          <div className="absolute -top-24 -left-20 w-96 h-96 rounded-full bg-gradient-to-br from-indigo-600/35 to-purple-600/30 blur-[95px] animate-float-1 pointer-events-none -z-10" />
 
           {/* Orb 2: Glowing Mint / Emerald */}
-          <div className="absolute top-1/2 -right-16 w-80 h-80 rounded-full bg-gradient-to-tr from-emerald-500/35 to-teal-400/30 blur-[90px] animate-float-2 pointer-events-none -z-10" />
+          <div className="absolute top-1/2 -right-16 w-80 h-80 rounded-full bg-gradient-to-tr from-emerald-500/30 to-teal-400/25 blur-[90px] animate-float-2 pointer-events-none -z-10" />
 
           {/* Orb 3: Radiant Coral / Rose */}
-          <div className="absolute -bottom-24 left-1/3 w-88 h-88 rounded-full bg-gradient-to-r from-rose-500/30 to-amber-500/25 blur-[90px] animate-float-3 pointer-events-none -z-10" />
+          <div className="absolute -bottom-24 left-1/3 w-88 h-88 rounded-full bg-gradient-to-r from-rose-500/25 to-amber-500/20 blur-[90px] animate-float-3 pointer-events-none -z-10" />
 
           {/* Micro Grid Overlay for High-Tech Texture */}
-          <div className="absolute inset-0 bg-[radial-gradient(#ffffff0d_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none -z-10 opacity-70" />
+          <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none -z-10 opacity-60" />
 
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
             <div className="space-y-4 max-w-2xl">
               {/* Top Greeting Badge + Status */}
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge className="bg-white/10 hover:bg-white/15 text-indigo-200 border-white/15 backdrop-blur-md text-[11px] px-3 py-1 font-semibold flex items-center gap-1.5 shadow-sm">
+                <Badge className="bg-white/[0.06] hover:bg-white/[0.1] text-indigo-200 border-white/10 backdrop-blur-md text-[10px] px-3 py-1 font-bold uppercase tracking-widest flex items-center gap-1.5 shadow-sm">
                   <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
                   East West University Peer Swap
                 </Badge>
-                <span className="text-xs text-slate-300 font-medium">
-                  Good morning, <strong className="text-white">{user.displayName || "Member"}</strong> 👋
+                <span className="text-xs text-zinc-400 font-medium">
+                  Welcome back, <strong className="text-white font-bold">{user.displayName || "Member"}</strong>
                 </span>
               </div>
 
-              {/* Masking Gradient Shine Headline */}
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.1] text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-emerald-200 animate-gradient-flow">
+              {/* Massive Masking Gradient Shine Headline with Negative Letter Spacing */}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter leading-[1.05] text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-emerald-200 animate-gradient-flow">
                 Your skills are your currency.
               </h1>
 
               {/* Subtitle */}
-              <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed max-w-xl">
+              <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-xl font-normal">
                 Trade hands-on software, design, and academic expertise directly with peers. Every booking is secured in automated escrow until the session is verified.
               </p>
 
               {/* 2. THE FOMO ACTIVITY TICKER */}
               <div className="pt-1">
-                <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-900/80 dark:bg-black/60 backdrop-blur-md border border-white/10 text-white shadow-lg w-fit">
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[10px] font-black uppercase tracking-wider text-emerald-300">
+                <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 text-white shadow-xl w-fit">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-black uppercase tracking-widest text-emerald-300">
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
@@ -277,78 +277,79 @@ export default function Dashboard() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -7 }}
                       transition={{ duration: 0.25 }}
-                      className="text-[11px] font-medium text-slate-200 truncate max-w-[260px] sm:max-w-md flex items-center gap-2"
+                      className="text-[11px] font-medium text-zinc-200 truncate max-w-[260px] sm:max-w-md flex items-center gap-2"
                     >
                       <span>{LIVE_ACTIVITY_ITEMS[tickerIndex].text}</span>
-                      <span className="text-[10px] text-slate-400 shrink-0 hidden sm:inline">· {LIVE_ACTIVITY_ITEMS[tickerIndex].time}</span>
+                      <span className="text-[10px] text-zinc-500 shrink-0 hidden sm:inline">· {LIVE_ACTIVITY_ITEMS[tickerIndex].time}</span>
                     </motion.div>
                   </AnimatePresence>
                 </div>
               </div>
             </div>
 
-            {/* 3. TACTILE HERO ACTION CONTROLS */}
+            {/* 3. MAGNETIC & LUMINOUS HERO ACTION CONTROLS */}
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
-              <button
+              <MagneticButton
                 onClick={() => setLocation("/discover")}
-                className="shimmer-btn group px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs tracking-wide shadow-lg shadow-indigo-600/35 hover:shadow-xl hover:shadow-indigo-600/50 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+                className="shimmer-btn group px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-violet-600 text-white font-extrabold text-xs tracking-wide shadow-[0_0_30px_rgba(99,102,241,0.4),0_0_15px_rgba(53,169,133,0.3)] hover:shadow-[0_0_45px_rgba(99,102,241,0.6),0_0_25px_rgba(53,169,133,0.45)] border border-indigo-400/30 flex items-center justify-center gap-2"
               >
                 <Plus className="w-4 h-4 transition-transform group-hover:rotate-90 duration-300" />
                 <span>Post a Service</span>
                 <ArrowRight className="w-3.5 h-3.5 opacity-80 group-hover:translate-x-1 transition-transform" />
-              </button>
+              </MagneticButton>
 
-              <button
+              <MagneticButton
+                variant="outline"
                 onClick={() => setLocation("/discover")}
-                className="px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/15 backdrop-blur-md hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 shadow-md cursor-pointer"
+                className="px-6 py-3.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] text-white font-bold text-xs border border-white/10 backdrop-blur-xl shadow-[0_0_20px_rgba(255,255,255,0.05)] hover:shadow-[0_0_30px_rgba(99,102,241,0.3)] flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
                 <span>Find a Skill</span>
-              </button>
+              </MagneticButton>
             </div>
           </div>
         </motion.div>
 
-        {/* 4. CASCADE ITEM 2: WALLET & UPCOMING EXCHANGES */}
+        {/* 4. CASCADE ITEM 2: WALLET & UPCOMING EXCHANGES - Spatial Frosted Glass */}
         <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Wallet Card with 3D Hover Lift and Ambient Glow */}
-          <Card className="card-hover-3d lg:col-span-1 bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white border-indigo-800/40 shadow-xl overflow-hidden relative">
-            {/* Background Glow Spheres */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+          {/* Wallet Card with Spatial Panel and Luminous Response */}
+          <Card className="card-hover-3d lg:col-span-1 bg-white/[0.025] backdrop-blur-3xl text-white border-white/10 shadow-2xl overflow-hidden relative hover:border-white/20">
+            {/* Ambient Background Glow Spheres */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
             
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Your Balance</span>
-                <span className="text-[10px] bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Your Balance</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-300 border border-indigo-500/25 px-2.5 py-0.5 rounded-full">
                   5% Platform Protected
                 </span>
               </div>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {/* Single BDT Balance */}
-              <div className="p-4 rounded-xl bg-slate-950/70 border border-indigo-500/20">
-                <p className="text-xs text-indigo-200 font-medium">Available BDT Balance</p>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-3xl font-black tracking-tight text-emerald-400">৳ {user.bdtBalance.toLocaleString()}</span>
-                  <span className="text-xs text-slate-400 font-semibold">BDT</span>
+              {/* Single BDT Balance Spatial Block */}
+              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 backdrop-blur-md">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Available BDT Balance</p>
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span className="text-4xl font-black tracking-tighter text-emerald-400">৳ {user.bdtBalance.toLocaleString()}</span>
+                  <span className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest">BDT</span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1">Single source of truth for skill swaps & escrow</p>
+                <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider font-medium">Single source of truth for skill swaps & escrow</p>
               </div>
 
-              {/* Wallet Action Buttons with Tactile Shimmer */}
+              {/* Wallet Action Buttons with Magnetic Physics & Tactile Shimmer */}
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <Button
+                <MagneticButton
                   onClick={() => setLocation("/wallet")}
-                  className="shimmer-btn bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/30 hover:shadow-lg hover:shadow-indigo-600/45 hover:scale-105 active:scale-95 transition-all duration-200 gap-1.5"
+                  className="shimmer-btn bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-bold text-xs rounded-xl shadow-[0_0_25px_rgba(99,102,241,0.35)] hover:shadow-[0_0_35px_rgba(53,169,133,0.4)] border border-indigo-400/30 gap-1.5 w-full"
                 >
                   <Wallet className="w-3.5 h-3.5" />
                   Manage Wallet
-                </Button>
+                </MagneticButton>
                 <Button
                   onClick={() => setHistoryModalOpen(true)}
                   variant="outline"
-                  className="border-indigo-700/50 bg-indigo-950/40 text-indigo-200 hover:bg-indigo-900 hover:text-white text-xs rounded-xl gap-1.5 hover:scale-105 active:scale-95 transition-all duration-200"
+                  className="border-white/10 bg-white/[0.03] text-zinc-300 hover:text-white hover:bg-white/[0.07] hover:border-white/20 text-xs rounded-xl gap-1.5"
                 >
                   <History className="w-3.5 h-3.5" />
                   History
@@ -357,15 +358,15 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Active Exchanges List */}
-          <Card className="card-hover-3d lg:col-span-2 bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+          {/* Active Exchanges List - No Harsh Table Borders */}
+          <Card className="card-hover-3d lg:col-span-2 bg-white/[0.025] backdrop-blur-3xl border-white/10 shadow-2xl flex flex-col justify-between hover:border-white/20">
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-indigo-500" />
+                <CardTitle className="text-base font-extrabold tracking-tight text-white flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-indigo-400" />
                   Active Exchanges
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
+                <CardDescription className="text-xs text-zinc-400">
                   Escrow-backed sessions associated with your account.
                 </CardDescription>
               </div>
@@ -373,45 +374,45 @@ export default function Dashboard() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setLocation("/exchanges")}
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all"
+                className="text-xs text-indigo-400 hover:text-indigo-300 hover:bg-white/[0.06] font-semibold"
               >
                 View All <ChevronRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             </CardHeader>
 
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2.5">
               {activeEscrows.length === 0 ? (
-                <p className="py-8 text-center text-xs text-slate-500">No active exchanges yet.</p>
+                <p className="py-8 text-center text-xs text-zinc-500">No active exchanges yet.</p>
               ) : activeEscrows.map((item) => (
                 <div
                   key={item.id}
-                  className="p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors hover:border-indigo-200 dark:hover:border-indigo-800"
+                  className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all duration-200"
                 >
                   <div className="flex items-center gap-3">
                     <img
                       src={item.counterpartyAvatar}
                       alt={item.counterpartyName}
-                      className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0"
+                      className="w-10 h-10 rounded-full object-cover border border-white/15 shrink-0"
                     />
                     <div>
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white">{item.title}</h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                      <h4 className="text-xs font-bold text-white">{item.title}</h4>
+                      <p className="text-[10px] text-zinc-400 flex items-center gap-1.5 mt-0.5">
                         <span>with {item.counterpartyName}</span>
                         <span>•</span>
-                        <span className="text-indigo-600 dark:text-indigo-400 font-medium">{item.format}</span>
+                        <span className="text-indigo-400 font-semibold">{item.format}</span>
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end gap-3 text-right">
                     <div className="text-xs">
-                      <div className="font-semibold text-slate-900 dark:text-slate-200">{item.date}</div>
-                      <div className="text-[10px] text-slate-400 flex items-center gap-1 justify-end">
+                      <div className="font-semibold text-zinc-200">{item.date}</div>
+                      <div className="text-[10px] text-zinc-500 flex items-center gap-1 justify-end font-medium">
                         <Clock className="w-3 h-3" />
                         {item.time}
                       </div>
                     </div>
-                    <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]">
+                    <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[10px] font-bold">
                       {item.status}
                     </Badge>
                   </div>
@@ -425,28 +426,29 @@ export default function Dashboard() {
         <motion.div variants={itemVariants} className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-500" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Curated For You</span>
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tighter flex items-center gap-2 mt-0.5">
+                <Sparkles className="w-5 h-5 text-indigo-400" />
                 Recommended Skill Swaps
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Handpicked listings matching your learning interests with 3D tactile lift.
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Handpicked listings matching your learning interests with spatial 3D tactile lift.
               </p>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setLocation("/discover")}
-              className="text-xs text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:scale-105 active:scale-95 transition-all shadow-sm hover:border-indigo-300 hover:text-indigo-600"
+              className="text-xs text-zinc-300 border-white/10 bg-white/[0.03] hover:text-white hover:bg-white/[0.08] hover:border-white/20"
             >
               Browse All <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </Button>
           </div>
 
           {/* Horizontal Scroll Flex Container */}
-          <div className="flex gap-4 overflow-x-auto pb-6 pt-2 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 px-1">
+          <div className="flex gap-4 overflow-x-auto pb-6 pt-2 scrollbar-thin scrollbar-thumb-zinc-800 px-1">
             {recommendedSkills.length === 0 ? (
-              <p className="py-8 text-xs text-slate-500">No published services are available yet.</p>
+              <p className="py-8 text-xs text-zinc-500">No published services are available yet.</p>
             ) : recommendedSkills.map((skill) => (
               <SkillCard key={skill.id} {...skill} onBook={handleBookSkill} />
             ))}
@@ -459,34 +461,34 @@ export default function Dashboard() {
         </motion.div>
       </motion.div>
 
-      {/* EARN CREDITS MODAL */}
+      {/* EARN CREDITS MODAL - Spatial Glass */}
       <Dialog open={earnModalOpen} onOpenChange={setEarnModalOpen}>
-        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+        <DialogContent className="bg-[#0e0f14]/95 backdrop-blur-3xl border-white/10 text-white shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-              <Coins className="w-5 h-5 text-indigo-500" />
+            <DialogTitle className="text-lg font-black tracking-tight flex items-center gap-2 text-white">
+              <Coins className="w-5 h-5 text-indigo-400" />
               How to Earn Credits
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+            <DialogDescription className="text-xs text-zinc-400">
               EwuSwap operates on a peer-to-peer credit model. Here's how to build your credit balance:
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-2">
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white">1. Teach a Skill Session</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="p-3.5 rounded-xl bg-white/[0.025] border border-white/10 space-y-1">
+              <h4 className="text-xs font-bold text-white">1. Teach a Skill Session</h4>
+              <p className="text-xs text-zinc-400">
                 Publish a course or service listing. Earn credits directly when members book and complete exchanges with you.
               </p>
             </div>
-            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white">2. Host a Group Study Session</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+            <div className="p-3.5 rounded-xl bg-white/[0.025] border border-white/10 space-y-1">
+              <h4 className="text-xs font-bold text-white">2. Host a Group Study Session</h4>
+              <p className="text-xs text-zinc-400">
                 Lead a multi-student group session in your group space to earn credit rewards from multiple participants simultaneously.
               </p>
             </div>
-            <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs">
-              <p className="font-semibold text-indigo-400">5% Platform Fee Note:</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
+            <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs">
+              <p className="font-bold text-indigo-300">5% Platform Fee Note:</p>
+              <p className="text-[11px] text-zinc-400 mt-0.5">
                 Every escrow transaction holds funds safely until completed. Providers receive net credits (`gross - 5% fee`) after verification.
               </p>
             </div>
@@ -494,28 +496,28 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* HISTORY MODAL */}
+      {/* HISTORY MODAL - Spatial Glass */}
       <Dialog open={historyModalOpen} onOpenChange={setHistoryModalOpen}>
-        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+        <DialogContent className="bg-[#0e0f14]/95 backdrop-blur-3xl border-white/10 text-white shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-              <History className="w-5 h-5 text-indigo-500" />
+            <DialogTitle className="text-lg font-black tracking-tight flex items-center gap-2 text-white">
+              <History className="w-5 h-5 text-indigo-400" />
               Recent Escrow Transactions
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+            <DialogDescription className="text-xs text-zinc-400">
               Escrow payment history and status tracking.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 pt-2">
             {escrowHistory.length === 0 ? (
-              <p className="py-6 text-center text-xs text-slate-500">No escrow history yet.</p>
+              <p className="py-6 text-center text-xs text-zinc-500">No escrow history yet.</p>
             ) : escrowHistory.slice(0, 5).map((item) => (
-              <div key={item.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+              <div key={item.id} className="p-3 rounded-xl bg-white/[0.025] border border-white/10 flex items-center justify-between text-xs">
                 <div>
-                  <p className="font-bold text-slate-900 dark:text-white">{item.title}</p>
-                  <p className="text-[10px] text-slate-400">with {item.counterpartyName} · {item.date}</p>
+                  <p className="font-bold text-white">{item.title}</p>
+                  <p className="text-[10px] text-zinc-500 font-medium">with {item.counterpartyName} · {item.date}</p>
                 </div>
-                <Badge className={`${item.status === "released" ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : item.status === "rejected" ? "bg-rose-500/10 text-rose-600 border-rose-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"} text-[10px]`}>
+                <Badge className={`${item.status === "released" ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : item.status === "rejected" ? "bg-rose-500/15 text-rose-300 border-rose-500/30" : "bg-amber-500/15 text-amber-300 border-amber-500/30"} text-[10px] font-bold`}>
                   {item.status} (৳ {item.amountBdt.toLocaleString()} BDT)
                 </Badge>
               </div>
