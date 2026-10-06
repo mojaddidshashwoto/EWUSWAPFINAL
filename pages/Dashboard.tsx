@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { getCurrentUser, listMyEscrowTransactions, listPublishedSkillCourses } from "@/lib/supabase";
+import { supabase, getCurrentUser, listMyEscrowTransactions, listPublishedSkillCourses } from "@/lib/supabase";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 const LIVE_ACTIVITY_ITEMS = [
@@ -139,6 +139,7 @@ export default function Dashboard() {
   const { user: authUser } = useAuth();
   const [earnModalOpen, setEarnModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [userBdt, setUserBdt] = useState(0);
   const [user, setUser] = useState({ displayName: "", bdtBalance: 0 });
   const [escrowHistory, setEscrowHistory] = useState<Array<{ id: string; title: string; counterpartyName: string; counterpartyAvatar: string; date: string; time: string; format: string; amountBdt: number; status: string }>>([]);
   const [activeEscrows, setActiveEscrows] = useState<Array<{ id: string; title: string; counterpartyName: string; counterpartyAvatar: string; date: string; time: string; format: string; amountBdt: number; status: string }>>([]);
@@ -152,57 +153,99 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    let isActive = true;
-    Promise.all([getCurrentUser(), listMyEscrowTransactions(), listPublishedSkillCourses()])
-      .then(([currentUser, transactions, courses]) => {
-        if (!isActive) return;
-        setUser({
-          displayName: currentUser?.displayName || currentUser?.name || authUser?.displayName || "Member",
-          bdtBalance: currentUser?.bdtBalance ?? 0,
-        });
-        const mappedTransactions = transactions.map((transaction) => {
-          const counterparty = transaction.isPayer ? transaction.payee : transaction.payer;
-          const createdAt = new Date(transaction.created_at);
-          const amountBdt = Number(transaction.gross_amount_bdt ?? (transaction.gross_amount_credits ? transaction.gross_amount_credits * 120 : (transaction.amount_bdt ?? transaction.amount_credits * 120)));
-          return {
-            id: transaction.id,
-            title: transaction.course?.title || "Skill exchange",
-            counterpartyName: counterparty.display_name,
-            counterpartyAvatar: counterparty.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
-            date: createdAt.toLocaleDateString(),
-            time: createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-            format: "Coordinate with your exchange partner",
-            bdt: amountBdt,
-            amountBdt,
-            status: transaction.status,
-          };
-        });
-        setEscrowHistory(mappedTransactions);
-        setActiveEscrows(mappedTransactions.filter((transaction) => ["pending", "submitted", "verified"].includes(transaction.status)));
-        setRecommendedSkills(courses.slice(0, 4).map((course) => ({
-          id: course.id,
-          title: course.title,
-          providerName: course.instructorName,
-          providerAvatar: course.instructorAvatar,
-          isVerified: course.isVerified,
-          category: course.category,
-          type: course.type === "service" ? "Service" : "Course",
-          bdtCost: course.priceBdt,
-          duration: `${course.durationMinutes} min`,
-          rating: course.averageRating,
-          reviewsCount: course.reviewCount,
-          description: course.description,
-          authorId: course.instructorId,
-        })));
-      })
-      .catch((error) => {
-        if (isActive) toast.error(error?.message || "Could not load your dashboard data.");
+  // Fetch user profile and actual BDT balance from database exactly like Wallet.tsx
+  const loadUserData = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      const balance = currentUser?.bdtBalance ?? 0;
+      setUserBdt(balance);
+      setUser((prev) => ({
+        ...prev,
+        displayName: currentUser?.displayName || currentUser?.name || authUser?.displayName || "Member",
+        bdtBalance: balance,
+      }));
+    } catch (err) {
+      console.error("Could not load user wallet data:", err);
+    }
+  };
+
+  const loadDashboardData = async () => {
+    await loadUserData();
+    try {
+      const [transactions, courses] = await Promise.all([
+        listMyEscrowTransactions().catch(() => []),
+        listPublishedSkillCourses().catch(() => []),
+      ]);
+      const mappedTransactions = transactions.map((transaction) => {
+        const counterparty = transaction.isPayer ? transaction.payee : transaction.payer;
+        const createdAt = new Date(transaction.created_at);
+        const amountBdt = Number(transaction.gross_amount_bdt ?? (transaction.gross_amount_credits ? transaction.gross_amount_credits * 120 : (transaction.amount_bdt ?? transaction.amount_credits * 120)));
+        return {
+          id: transaction.id,
+          title: transaction.course?.title || "Skill exchange",
+          counterpartyName: counterparty.display_name,
+          counterpartyAvatar: counterparty.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
+          date: createdAt.toLocaleDateString(),
+          time: createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+          format: "Coordinate with your exchange partner",
+          bdt: amountBdt,
+          amountBdt,
+          status: transaction.status,
+        };
       });
-    return () => {
-      isActive = false;
+      setEscrowHistory(mappedTransactions);
+      setActiveEscrows(mappedTransactions.filter((transaction) => ["pending", "submitted", "verified"].includes(transaction.status)));
+      setRecommendedSkills(courses.slice(0, 4).map((course) => ({
+        id: course.id,
+        title: course.title,
+        providerName: course.instructorName,
+        providerAvatar: course.instructorAvatar,
+        isVerified: course.isVerified,
+        category: course.category,
+        type: course.type === "service" ? "Service" : "Course",
+        bdtCost: course.priceBdt,
+        duration: `${course.durationMinutes} min`,
+        rating: course.averageRating,
+        reviewsCount: course.reviewCount,
+        description: course.description,
+        authorId: course.instructorId,
+      })));
+    } catch (error: any) {
+      toast.error(error?.message || "Could not load your dashboard data.");
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+    let channel: ReturnType<typeof supabase.channel> | undefined;
+
+    const loadAndSubscribe = async () => {
+      await loadDashboardData();
+      const { data: { user: sbUser }, error } = await supabase.auth.getUser();
+      if (error || !sbUser || !isMounted) return;
+
+      const refresh = () => { void loadUserData(); };
+      channel = supabase
+        .channel(`dashboard_wallet:${sbUser.id}`)
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "ss_profiles", filter: `id=eq.${sbUser.id}` }, refresh)
+        .on("postgres_changes", { event: "*", schema: "public", table: "ss_escrow_transactions", filter: `payer_id=eq.${sbUser.id}` }, refresh)
+        .on("postgres_changes", { event: "*", schema: "public", table: "ss_escrow_transactions", filter: `payee_id=eq.${sbUser.id}` }, refresh)
+        .subscribe();
     };
-  }, [authUser?.id, authUser?.displayName]);
+
+    void loadAndSubscribe();
+
+    const handleUpdate = () => { void loadUserData(); };
+    window.addEventListener("ss_wallet_updated", handleUpdate);
+    window.addEventListener("ss_user_changed", handleUpdate);
+
+    return () => {
+      isMounted = false;
+      if (channel) void supabase.removeChannel(channel);
+      window.removeEventListener("ss_wallet_updated", handleUpdate);
+      window.removeEventListener("ss_user_changed", handleUpdate);
+    };
+  }, [authUser?.id]);
 
   const handleBookSkill = (skillId: string) => {
     setLocation(`/skills/${skillId}`);
@@ -331,7 +374,7 @@ export default function Dashboard() {
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 backdrop-blur-md">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Available BDT Balance</p>
                 <div className="flex items-baseline gap-2 mt-1.5">
-                  <span className="text-4xl font-black tracking-tighter text-emerald-400">৳ {user.bdtBalance.toLocaleString()}</span>
+                  <span className="text-4xl font-black tracking-tighter text-emerald-400">৳ {userBdt.toLocaleString()}</span>
                   <span className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest">BDT</span>
                 </div>
                 <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider font-medium">Single source of truth for skill swaps & escrow</p>
