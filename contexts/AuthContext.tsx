@@ -10,7 +10,6 @@ export interface User {
   displayName: string;
   avatar: string;
   role: UserRole;
-  credits: number;
   bdtBalance: number;
   isVerified: boolean;
 }
@@ -41,7 +40,6 @@ const mapAuthUser = (authUser: any): User | null => {
     displayName: metadata.display_name || fullName,
     avatar: metadata.avatar_url || metadata.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
     role: (metadata.role as UserRole) || "student",
-    credits: Number(metadata.credits ?? 0),
     bdtBalance: Number(metadata.bdt_balance ?? 0),
     isVerified: Boolean(metadata.is_verified ?? false),
   };

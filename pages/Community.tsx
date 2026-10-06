@@ -11,9 +11,11 @@ import {
   ShieldCheck, MessageCircle, Plus
 } from "lucide-react";
 import { toast } from "sonner";
-import { createCommunityPost, listCommunityPosts, toggleCommunityPostLike, type CommunityPost as Post } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { createCommunityPost, createConversation, listCommunityPosts, toggleCommunityPostLike, type CommunityPost as Post } from "@/lib/supabase";
 
 export default function CommunityPage() {
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,9 +78,21 @@ export default function CommunityPage() {
     }
   };
 
-  const handleMessageUser = (authorName: string) => {
-    toast.info(`Opening conversation with ${authorName}...`);
-    setLocation("/messages");
+  const handleMessageUser = async (authorId?: string, authorName?: string) => {
+    if (!authorId) {
+      toast.error("Cannot message user: author not found.");
+      return;
+    }
+    if (user?.id && authorId === user.id) {
+      toast.error("You cannot message yourself.");
+      return;
+    }
+    try {
+      await createConversation(authorId);
+      setLocation("/messages");
+    } catch (err: any) {
+      toast.error(err?.message || `Could not open conversation with ${authorName || "this member"}.`);
+    }
   };
 
   return (
@@ -205,7 +219,7 @@ export default function CommunityPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleMessageUser(post.authorName)}
+                  onClick={() => handleMessageUser(post.authorId, post.authorName)}
                   className="text-xs border-slate-200 dark:border-slate-800 gap-1"
                 >
                   <MessageCircle className="w-3.5 h-3.5 text-indigo-500" />

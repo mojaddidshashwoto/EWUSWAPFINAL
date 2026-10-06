@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Users, Calendar, Clock, Coins, ShieldCheck, TrendingUp, Plus, Pencil, GraduationCap
+  Users, Calendar, Clock, Coins, Wallet, ShieldCheck, TrendingUp, Plus, Pencil, GraduationCap
 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -243,11 +243,11 @@ export default function GroupLearningPage() {
               {/* Price & Join CTA */}
               <CardFooter className="px-5 py-3 bg-slate-50/60 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div>
-                  <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">
-                    <Coins className="w-4 h-4" />
-                    <span>{grp.creditCost} Credits</span>
+                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">
+                    <Wallet className="w-4 h-4" />
+                    <span>৳ {(grp.creditCost * 10).toLocaleString()} BDT</span>
                   </div>
-                  <span className="text-[10px] text-slate-400">৳ {grp.creditCost * 120} BDT equivalent</span>
+                  <span className="text-[10px] text-slate-400">per student · Escrow Protected</span>
                 </div>
 
                 {grp.isOwner ? (
@@ -300,8 +300,8 @@ export default function GroupLearningPage() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="group-credit-cost">Price per student (credits)</Label>
-                <Input id="group-credit-cost" type="number" min="0" step="1" value={newGroupCost} onChange={(e) => setNewGroupCost(e.target.value)} />
+                <Label htmlFor="group-credit-cost">Price per student (৳ BDT)</Label>
+                <Input id="group-credit-cost" type="number" min="0" step="50" value={newGroupCost} onChange={(e) => setNewGroupCost(e.target.value)} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="group-capacity">Maximum attendees</Label>

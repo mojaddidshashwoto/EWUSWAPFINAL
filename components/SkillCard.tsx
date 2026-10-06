@@ -11,8 +11,7 @@ export interface SkillCardProps {
   isVerified?: boolean;
   category: string;
   type: "Course" | "Service";
-  creditCost: number;
-  bdtCost?: number;
+  bdtCost: number;
   duration: string;
   rating: number;
   reviewsCount: number;
@@ -29,8 +28,7 @@ export function SkillCard({
   isVerified = true,
   category,
   type,
-  creditCost,
-  bdtCost = creditCost * 50, // Standard conversion rate (e.g. 1 Credit = 50 BDT)
+  bdtCost,
   duration,
   rating,
   reviewsCount,
@@ -94,19 +92,16 @@ export function SkillCard({
       <CardFooter className="px-4 py-3 bg-slate-50/60 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
         <div className="space-y-0.5">
           <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">
-            <Coins className="w-4 h-4" />
-            <span>{creditCost} Credits</span>
+            <Wallet className="w-4 h-4" />
+            <span>৳ {bdtCost.toLocaleString()} BDT</span>
           </div>
-          <div className="flex items-center gap-1 text-slate-400 text-[10px]">
-            <Wallet className="w-3 h-3" />
-            <span>৳ {bdtCost} BDT</span>
-          </div>
+          <p className="text-[10px] text-slate-400">Escrow Protected</p>
         </div>
 
         <Button
           size="sm"
           onClick={() => onBook?.(id)}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/20 gap-1"
+          className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/20 gap-1 cursor-pointer"
         >
           Book Swap
           <ArrowUpRight className="w-3.5 h-3.5" />

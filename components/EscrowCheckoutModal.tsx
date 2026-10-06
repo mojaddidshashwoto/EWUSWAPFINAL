@@ -3,7 +3,7 @@ import { calculateEscrowQuote } from "@/platform";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShieldCheck, Coins, Wallet, CheckCircle2, LockKeyhole, AlertCircle, ArrowRight } from "lucide-react";
+import { ShieldCheck, Wallet, LockKeyhole, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { createPaidEscrow } from "@/lib/supabase";
 
@@ -14,8 +14,9 @@ export interface EscrowCheckoutModalProps {
   providerName: string;
   courseId: string;
   payeeId: string;
-  amountCredits: number;
-  creditToBdtRate?: number; // Default 120 BDT per credit
+  amountCredits?: number;
+  amountBdt?: number;
+  creditToBdtRate?: number;
   onConfirmSuccess?: () => void;
 }
 
@@ -27,31 +28,36 @@ export function EscrowCheckoutModal({
   courseId,
   payeeId,
   amountCredits,
+  amountBdt,
   creditToBdtRate = 120,
   onConfirmSuccess,
 }: EscrowCheckoutModalProps) {
   const [isAuthorizing, setIsAuthorizing] = useState(false);
 
-  const validCredits = amountCredits;
-  const quote = calculateEscrowQuote(validCredits);
-
-  const grossBdt = quote.grossCredits * creditToBdtRate;
-  const feeBdt = quote.platformFeeCredits * creditToBdtRate;
-  const netBdt = quote.providerNetCredits * creditToBdtRate;
+  const priceBdt = amountBdt ?? (amountCredits !== undefined ? amountCredits * creditToBdtRate : 500);
+  let quote = null;
+  let quoteError = "This listing cannot be checked out because its price is invalid.";
+  try {
+    quote = calculateEscrowQuote(priceBdt);
+    quoteError = "";
+  } catch (error) {
+    if (error instanceof Error) quoteError = error.message;
+  }
 
   const handleConfirmPayment = async () => {
+    if (!quote) return;
     setIsAuthorizing(true);
     try {
       const escrow = await createPaidEscrow({
         payeeId,
         courseId,
-        amountCredits: quote.grossCredits,
+        amountBdt: quote.grossBdt,
       });
       toast.success(`Escrow reserved for "${skillTitle}". Transaction ${escrow.id.slice(0, 8)}.`);
       onConfirmSuccess?.();
       onClose();
     } catch (err: any) {
-      toast.error(err?.message || "Failed to reserve escrow. Please try again.");
+      toast.error(err?.message || "Failed to reserve escrow. Please check your BDT balance.");
     } finally {
       setIsAuthorizing(false);
     }
@@ -66,7 +72,7 @@ export function EscrowCheckoutModal({
               <LockKeyhole className="w-4 h-4" />
             </div>
             <Badge className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20 text-[10px]">
-              5% Platform Fee Protected
+              5% Escrow Protection
             </Badge>
           </div>
           <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
@@ -77,15 +83,13 @@ export function EscrowCheckoutModal({
           </DialogDescription>
         </DialogHeader>
 
-        {/* PRICE BREAKDOWN TABLE */}
-        <div className="space-y-4 py-2">
+        {quote ? <div className="space-y-4 py-2">
           <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 space-y-3 text-xs">
             {/* Base Service Cost */}
             <div className="flex items-center justify-between">
               <span className="text-slate-600 dark:text-slate-400 font-medium">Service Cost (Gross):</span>
               <div className="text-right">
-                <span className="font-bold text-slate-900 dark:text-white">{quote.grossCredits} Credits</span>
-                <span className="text-[10px] text-slate-400 block">(৳ {grossBdt.toLocaleString()} BDT)</span>
+                <span className="font-bold text-slate-900 dark:text-white">৳ {quote.grossBdt.toLocaleString()} BDT</span>
               </div>
             </div>
 
@@ -95,8 +99,7 @@ export function EscrowCheckoutModal({
                 Platform Fee (5% / 500 bps):
               </span>
               <div className="text-right">
-                <span className="font-bold">-{quote.platformFeeCredits} Credit</span>
-                <span className="text-[10px] opacity-80 block">(-৳ {feeBdt.toLocaleString()} BDT)</span>
+                <span className="font-bold">-৳ {quote.platformFeeBdt.toLocaleString()} BDT</span>
               </div>
             </div>
 
@@ -104,16 +107,14 @@ export function EscrowCheckoutModal({
             <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
               <span className="font-medium">Provider Net Settlement:</span>
               <div className="text-right">
-                <span className="font-bold">{quote.providerNetCredits} Credits</span>
-                <span className="text-[10px] opacity-80 block">(৳ {netBdt.toLocaleString()} BDT)</span>
+                <span className="font-bold">৳ {quote.providerNetBdt.toLocaleString()} BDT</span>
               </div>
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex items-center justify-between text-sm font-extrabold text-slate-900 dark:text-white">
               <span>Total Escrow Reserved:</span>
               <div className="text-right">
-                <span className="text-indigo-600 dark:text-indigo-400">{quote.grossCredits} Credits</span>
-                <span className="text-xs text-slate-400 block font-normal">(৳ {grossBdt.toLocaleString()} BDT)</span>
+                <span className="text-indigo-600 dark:text-indigo-400">৳ {quote.grossBdt.toLocaleString()} BDT</span>
               </div>
             </div>
           </div>
@@ -125,7 +126,7 @@ export function EscrowCheckoutModal({
               <strong className="text-indigo-600 dark:text-indigo-400">Escrow Guarantee:</strong> Funds are held securely in Escrow until you confirm session completion and satisfaction. Provider receives settlement only upon release.
             </p>
           </div>
-        </div>
+        </div> : <p role="alert" className="py-4 text-sm text-rose-600 dark:text-rose-400">{quoteError}</p>}
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="ghost" onClick={onClose} disabled={isAuthorizing} className="text-xs text-slate-500">
@@ -133,7 +134,7 @@ export function EscrowCheckoutModal({
           </Button>
           <Button
             onClick={handleConfirmPayment}
-            disabled={isAuthorizing}
+            disabled={isAuthorizing || !quote}
             className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/20 gap-2"
           >
             {isAuthorizing ? (
@@ -141,11 +142,13 @@ export function EscrowCheckoutModal({
                 <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
                 Reserving Escrow...
               </span>
-            ) : (
+            ) : quote ? (
               <span className="flex items-center gap-1.5">
-                Confirm & Authorize Escrow ({quote.grossCredits} Credits)
+                Confirm & Authorize Escrow (৳ {quote.grossBdt.toLocaleString()} BDT)
                 <ArrowRight className="w-4 h-4" />
               </span>
+            ) : (
+              <span>Checkout unavailable</span>
             )}
           </Button>
         </DialogFooter>

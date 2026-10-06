@@ -232,14 +232,14 @@ export default function LandingPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Credit & Barter System */}
+          {/* Card 1: BDT & Barter System */}
           <div className="p-7 rounded-2xl bg-slate-800/40 border border-slate-700/60 hover:border-indigo-500/40 transition-all space-y-4 relative overflow-hidden group">
             <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold">
               <Coins className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white">Dual-Currency Economy</h3>
+            <h3 className="text-lg font-bold text-white">Direct BDT & Barter Economy</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Trade peer-to-peer for free using pure skill swaps, or price your sessions in <strong>Skill Credits (1 Credit = ৳ 120 BDT)</strong>. Earn credits by teaching your peers, and spend them to master new tools.
+              Trade peer-to-peer for free using pure skill swaps, or price your sessions in <strong>BDT (৳)</strong>. Earn BDT directly by teaching your peers, and spend it to master new tools.
             </p>
             <div className="pt-2 flex items-center gap-2 text-xs font-semibold text-indigo-400">
               <span>Earn by teaching</span>
@@ -255,7 +255,7 @@ export default function LandingPage() {
             </div>
             <h3 className="text-lg font-bold text-white">Smart Escrow Protection</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              When booking a session, credits or BDT are reserved safely in escrow. Funds are released to the provider <strong>only after</strong> the session is completed and both students confirm deliverables.
+              When booking a session, BDT funds are reserved safely in escrow. Funds are released to the provider <strong>only after</strong> the session is completed and the learner confirms satisfaction.
             </p>
             <div className="pt-2 flex items-center gap-2 text-xs font-semibold text-emerald-400">
               <Check className="w-3.5 h-3.5" /> 100% money-back dispute guarantee
@@ -351,8 +351,8 @@ export default function LandingPage() {
                   </div>
 
                   <div className="text-right">
-                    <div className="text-xs font-black text-indigo-400">{item.credits} Credits</div>
-                    <div className="text-[10px] text-slate-500">৳ {item.bdt.toLocaleString()}</div>
+                    <div className="text-xs font-black text-emerald-400">৳ {item.bdt.toLocaleString()} BDT</div>
+                    <div className="text-[10px] text-slate-500">Escrow Protected</div>
                   </div>
                 </div>
               </div>

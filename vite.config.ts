@@ -1,5 +1,5 @@
 import path from "node:path";
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, type Plugin, type UserConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { createApiWebhookMiddleware } from "./server/middleware";
@@ -25,4 +25,7 @@ export default defineConfig({
     port: 5173,
     host: true,
   },
-});
+  test: {
+    exclude: ['**/node_modules/**', '**/dist/**', 'tests/**'],
+  },
+} as UserConfig & { test?: { exclude?: string[] } });

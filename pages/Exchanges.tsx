@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { listMyEscrowTransactions, openEscrowDispute, submitEscrowProof } from "@/lib/supabase";
+import { listMyEscrowTransactions, openEscrowDispute, releaseEscrowByPayer, submitEscrowProof } from "@/lib/supabase";
 
 interface ExchangeItem {
   id: string;
@@ -25,9 +25,9 @@ interface ExchangeItem {
   date: string;
   time: string;
   format: "Online" | "Offline";
-  grossCredits: number;
-  netCredits: number;
-  feeCredits: number;
+  grossBdt: number;
+  netBdt: number;
+  feeBdt: number;
   status: "upcoming" | "pending" | "active" | "completed" | "cancelled" | "disputed";
   escrowStatus: "pending" | "submitted" | "verified" | "released" | "rejected";
   isPayer: boolean;
@@ -45,9 +45,9 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
     date: "Today, Sep 26",
     time: "4:00 PM - 5:30 PM",
     format: "Online",
-    grossCredits: 24,
-    netCredits: 23,
-    feeCredits: 1,
+    grossBdt: 300,
+    netBdt: 285,
+    feeBdt: 15,
     status: "active",
     escrowStatus: "submitted",
     isPayer: true,
@@ -63,9 +63,9 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
     date: "Tomorrow, Sep 27",
     time: "11:00 AM - 12:00 PM",
     format: "Offline",
-    grossCredits: 18,
-    netCredits: 17,
-    feeCredits: 1,
+    grossBdt: 250,
+    netBdt: 237.5,
+    feeBdt: 12.5,
     status: "upcoming",
     escrowStatus: "pending",
     isPayer: true,
@@ -81,9 +81,9 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
     date: "Sep 20, 2026",
     time: "2:00 PM - 3:00 PM",
     format: "Online",
-    grossCredits: 25,
-    netCredits: 24,
-    feeCredits: 1,
+    grossBdt: 500,
+    netBdt: 475,
+    feeBdt: 25,
     status: "completed",
     escrowStatus: "released",
     isPayer: true,
@@ -99,9 +99,9 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
     date: "Sep 16, 2026",
     time: "3:00 PM - 4:00 PM",
     format: "Online",
-    grossCredits: 20,
-    netCredits: 19,
-    feeCredits: 1,
+    grossBdt: 200,
+    netBdt: 190,
+    feeBdt: 10,
     status: "disputed",
     escrowStatus: "submitted",
     isPayer: true,
@@ -119,24 +119,30 @@ export default function ExchangesPage() {
   const loadExchanges = async () => {
     try {
       const rows = await listMyEscrowTransactions();
-      setExchanges(rows.map((row) => ({
-        id: row.id,
-        title: row.course?.title || "Skill exchange",
-        category: row.course?.category || "Other",
-        teacherName: row.payee.display_name,
-        teacherAvatar: row.payee.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
-        learnerName: row.payer.display_name,
-        learnerAvatar: row.payer.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
-        date: new Date(row.created_at).toLocaleDateString(),
-        time: new Date(row.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-        format: "Online",
-        grossCredits: Number(row.gross_amount_credits ?? row.amount_credits),
-        netCredits: Number(row.net_amount_credits ?? row.amount_credits),
-        feeCredits: Number(row.platform_fee_credits ?? 0),
-        status: row.dispute ? "disputed" : row.status === "released" ? "completed" : row.status === "rejected" ? "cancelled" : row.status === "pending" ? "pending" : "active",
-        escrowStatus: row.status,
-        isPayer: row.isPayer,
-      })));
+      setExchanges(rows.map((row) => {
+        const grossBdt = Number(row.gross_amount_bdt ?? (row.gross_amount_credits ? row.gross_amount_credits * 120 : (row.amount_bdt ?? row.amount_credits * 120)));
+        const netBdt = Number(row.net_amount_bdt ?? (row.net_amount_credits ? row.net_amount_credits * 120 : grossBdt * 0.95));
+        const feeBdt = Number(row.platform_fee_bdt ?? (row.platform_fee_credits ? row.platform_fee_credits * 120 : grossBdt * 0.05));
+
+        return {
+          id: row.id,
+          title: row.course?.title || "Skill exchange",
+          category: row.course?.category || "Other",
+          teacherName: row.payee.display_name,
+          teacherAvatar: row.payee.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
+          learnerName: row.payer.display_name,
+          learnerAvatar: row.payer.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
+          date: new Date(row.created_at).toLocaleDateString(),
+          time: new Date(row.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+          format: "Online",
+          grossBdt,
+          netBdt,
+          feeBdt,
+          status: row.dispute ? "disputed" : row.status === "released" ? "completed" : row.status === "rejected" ? "cancelled" : row.status === "pending" ? "pending" : "active",
+          escrowStatus: row.status,
+          isPayer: row.isPayer,
+        };
+      }));
     } catch (error: any) {
       toast.error(error?.message || "Could not load exchange data.");
     } finally {
@@ -150,11 +156,11 @@ export default function ExchangesPage() {
 
   const handleReleaseFunds = async (id: string) => {
     try {
-      await submitEscrowProof(id);
-      toast.success("Satisfaction confirmed. The exchange was submitted for verification.");
+      await releaseEscrowByPayer(id);
+      toast.success("Payment released directly to the provider. Thank you for confirming!");
       await loadExchanges();
     } catch (error: any) {
-      toast.error(error?.message || "Could not submit this exchange for verification.");
+      toast.error(error?.message || "Could not release funds.");
     }
   };
 
@@ -183,14 +189,20 @@ export default function ExchangesPage() {
   };
 
   const renderExchangeCards = (statusFilter: ExchangeItem["status"]) => {
-    const list = exchanges.filter((ex) => ex.status === statusFilter);
+    const list = statusFilter === "active"
+      ? exchanges.filter((ex) => ex.status === "active" || ex.status === "pending")
+      : exchanges.filter((ex) => ex.status === statusFilter);
 
     if (list.length === 0) {
+      const emptyMessage = statusFilter === "active"
+        ? "No active or pending exchanges found."
+        : `No ${statusFilter} exchanges found.`;
+
       return (
         <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-center py-12">
           <CardContent className="space-y-2">
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {isLoading ? "Loading exchanges..." : `No ${statusFilter} exchanges found.`}
+              {isLoading ? "Loading exchanges..." : emptyMessage}
             </p>
           </CardContent>
         </Card>
@@ -259,9 +271,9 @@ export default function ExchangesPage() {
 
                 <div className="flex items-center gap-2">
                   <span className="font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
-                    <Coins className="w-3.5 h-3.5" /> {ex.grossCredits} Credits Reserved
+                    <Wallet className="w-3.5 h-3.5" /> ৳ {ex.grossBdt.toLocaleString()} BDT Reserved
                   </span>
-                  <span className="text-[10px] text-slate-400">(Net Provider: {ex.netCredits} Credits)</span>
+                  <span className="text-[10px] text-slate-400">(Net Provider: ৳ {ex.netBdt.toLocaleString()} BDT)</span>
                 </div>
               </div>
             </CardContent>
@@ -273,22 +285,23 @@ export default function ExchangesPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleOpenDisputeModal(ex.id)}
-                  disabled={ex.escrowStatus !== "submitted" && ex.escrowStatus !== "verified"}
                   className="text-xs text-rose-600 hover:bg-rose-50 border-rose-200 dark:border-rose-900"
                 >
                   <AlertCircle className="w-3.5 h-3.5 mr-1" />
                   Report Issue / Dispute
                 </Button>
 
-                <Button
-                  size="sm"
-                  onClick={() => handleReleaseFunds(ex.id)}
-                  disabled={!ex.isPayer || ex.escrowStatus !== "pending"}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-1.5"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Confirm Satisfaction & Submit for Verification
-                </Button>
+                {ex.isPayer && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleReleaseFunds(ex.id)}
+                    disabled={ex.escrowStatus === "released" || ex.escrowStatus === "rejected"}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Confirm Satisfaction & Release ৳ {ex.netBdt} BDT
+                  </Button>
+                )}
               </CardFooter>
             )}
           </Card>
@@ -319,7 +332,7 @@ export default function ExchangesPage() {
         {/* Tabbed Interface */}
         <Tabs defaultValue="active" className="space-y-4">
           <TabsList className="bg-white dark:bg-slate-900 p-1 border border-slate-200 dark:border-slate-800 rounded-xl overflow-x-auto">
-            <TabsTrigger value="active" className="text-xs">Active ({exchanges.filter(e => e.status === "active").length})</TabsTrigger>
+            <TabsTrigger value="active" className="text-xs">Active & Pending ({exchanges.filter(e => e.status === "active" || e.status === "pending").length})</TabsTrigger>
             <TabsTrigger value="upcoming" className="text-xs">Upcoming ({exchanges.filter(e => e.status === "upcoming").length})</TabsTrigger>
             <TabsTrigger value="pending" className="text-xs">Pending ({exchanges.filter(e => e.status === "pending").length})</TabsTrigger>
             <TabsTrigger value="completed" className="text-xs">Completed ({exchanges.filter(e => e.status === "completed").length})</TabsTrigger>

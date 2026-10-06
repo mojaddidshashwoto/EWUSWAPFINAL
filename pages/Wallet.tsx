@@ -66,14 +66,12 @@ export default function WalletPage() {
   const [withdrawAccountType, setWithdrawAccountType] = useState<"personal" | "agent">("personal");
   const [withdrawLoading, setWithdrawLoading] = useState(false);
 
-  const pendingEscrowCredits = transactions
+  const pendingEscrowBdt = transactions
     .filter((transaction) => transaction.status === "Held in escrow")
-    .reduce((total, transaction) => total + transaction.amountCredits, 0);
-  const pendingEscrowBdt = pendingEscrowCredits * CONVERSION_RATE;
-  const lifetimeEarnedCredits = transactions
+    .reduce((total, transaction) => total + transaction.amountBdt, 0);
+  const lifetimeEarnedBdt = transactions
     .filter((transaction) => transaction.type === "earned" && transaction.status === "Released")
-    .reduce((total, transaction) => total + transaction.amountCredits, 0);
-  const lifetimeEarnedBdt = lifetimeEarnedCredits * CONVERSION_RATE;
+    .reduce((total, transaction) => total + transaction.amountBdt, 0);
 
   // Load balances and transactions
   const loadData = async () => {
@@ -228,16 +226,16 @@ export default function WalletPage() {
           <Card className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white border-indigo-800/40 shadow-xl overflow-hidden relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
             <CardHeader className="pb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Available Balance</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Available Wallet Balance</span>
             </CardHeader>
             <CardContent className="space-y-3">
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-white">{userCredits} Credits</span>
+                  <span className="text-3xl font-black text-white">৳ {userBdt.toLocaleString()} BDT</span>
                 </div>
                 <p className="text-xs text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
-                  <WalletIcon className="w-3.5 h-3.5" />
-                  ৳ {userBdt.toLocaleString()} BDT Available
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Primary Balance (Source of Truth)
                 </p>
               </div>
 
@@ -245,14 +243,14 @@ export default function WalletPage() {
               <div className="pt-2 border-t border-indigo-800/50 flex items-center gap-2">
                 <button
                   onClick={() => setTopUpOpen(true)}
-                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1"
+                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <PlusCircle className="w-3.5 h-3.5 text-emerald-400" />
                   Top-Up
                 </button>
                 <button
                   onClick={() => setWithdrawOpen(true)}
-                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1"
+                  className="flex-1 py-1.5 px-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <Smartphone className="w-3.5 h-3.5 text-orange-400" />
                   Cashout
@@ -268,11 +266,11 @@ export default function WalletPage() {
             </CardHeader>
             <CardContent className="space-y-1">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-slate-900 dark:text-white">{pendingEscrowCredits} Credits</span>
+                <span className="text-3xl font-black text-slate-900 dark:text-white">৳ {pendingEscrowBdt.toLocaleString()} BDT</span>
               </div>
               <p className="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
                 <LockKeyhole className="w-3.5 h-3.5" />
-                ৳ {pendingEscrowBdt.toLocaleString()} BDT Reserved
+                Reserved in Active Exchanges
               </p>
               <p className="text-[10px] text-slate-400 mt-2">
                 Secured in smart escrow until exchange completion notes are confirmed.
@@ -287,11 +285,11 @@ export default function WalletPage() {
             </CardHeader>
             <CardContent className="space-y-1">
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black text-slate-900 dark:text-white">{lifetimeEarnedCredits} Credits</span>
+                <span className="text-3xl font-black text-slate-900 dark:text-white">৳ {lifetimeEarnedBdt.toLocaleString()} BDT</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
                 <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                ৳ {lifetimeEarnedBdt.toLocaleString()} BDT Net Total
+                Net Settled to Wallet
               </p>
               <p className="text-[10px] text-slate-400 mt-2">
                 Calculated from released provider transactions on your account.
@@ -414,10 +412,10 @@ export default function WalletPage() {
                       }`}
                     >
                       {tx.type === "earned" || tx.type === "refund" || tx.type === "topup" ? "+" : "-"}
-                      {tx.amountCredits} Credits
+                      ৳ {tx.amountBdt.toLocaleString()} BDT
                     </div>
                     <div className="text-[11px] text-slate-400">
-                      ৳ {tx.amountBdt.toLocaleString()} BDT
+                      {tx.status}
                     </div>
                   </div>
                 </div>

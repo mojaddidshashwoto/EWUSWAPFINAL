@@ -37,7 +37,7 @@ export type GroupLearningSession = {
   learningOutcomes: string;
   startsAt: string;
   endsAt: string;
-  creditCost: number;
+  priceBdt: number;
   maxStudents: number;
   enrolledStudents: number;
   hostName: string;
@@ -65,7 +65,8 @@ export type PublishedSkillCourse = {
   description: string;
   type: "course" | "service";
   durationMinutes: number;
-  creditCost: number;
+  priceBdt: number;
+  bdtCost: number;
   category: string;
   instructorId: string;
   instructorName: string;
@@ -90,6 +91,7 @@ export type UserEscrowTransaction = Record<string, any> & {
 
 export type CommunityPost = {
   id: string;
+  authorId?: string;
   authorName: string;
   authorAvatar: string;
   authorRole: string;
@@ -115,7 +117,7 @@ export type AdminWalletUser = {
   id: string;
   display_name: string;
   email: string;
-  credits_balance: number;
+  bdt_balance: number;
 };
 
 export type PrivacySettings = {
@@ -167,11 +169,10 @@ export interface PlatformDispute {
 
 export interface WalletTransaction {
   id: string;
-  type: "topup" | "withdrawal" | "earned" | "spent" | "refund" | "fee";
+  type: "topup" | "withdrawal" | "held" | "spent" | "released" | "refund" | "fee";
   title: string;
   counterparty: string;
   method?: "bkash" | "nagad" | "system";
-  amountCredits: number;
   amountBdt: number;
   date: string;
   status: "Released" | "Held in escrow" | "Refunded" | "Deducted" | "Completed" | "Processing";
@@ -200,7 +201,7 @@ export async function getCurrentUser() {
   const fullName = metadata.full_name || metadata.name || authUser.email?.split("@")[0] || "User";
   const { data: profile, error: profileError } = await supabase
     .from("ss_profiles")
-    .select("id, display_name, avatar_url, role, credits_balance, bdt_balance, is_verified")
+    .select("id, display_name, avatar_url, role, bdt_balance, is_verified")
     .eq("id", authUser.id)
     .maybeSingle();
 
@@ -213,7 +214,6 @@ export async function getCurrentUser() {
     displayName: profile?.display_name || metadata.display_name || fullName,
     avatar: profile?.avatar_url || metadata.avatar_url || metadata.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
     role: ((profile?.role || metadata.role) as UserRole) || "student",
-    credits: Number(profile?.credits_balance ?? metadata.credits ?? 0),
     bdtBalance: Number(profile?.bdt_balance ?? metadata.bdt_balance ?? 0),
     isVerified: Boolean(profile?.is_verified ?? metadata.is_verified ?? false),
   };
@@ -361,7 +361,7 @@ export async function uploadProfileAvatar(file: File | Blob | string) {
 export async function listPublishedSkillCourses(): Promise<PublishedSkillCourse[]> {
   const { data: courses, error } = await supabase
     .from("ss_courses")
-    .select("id, title, description, type, duration_minutes, credit_cost, instructor_id, category_id")
+    .select("id, title, description, type, duration_minutes, price_bdt, instructor_id, category_id")
     .eq("status", "published")
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -391,13 +391,15 @@ export async function listPublishedSkillCourses(): Promise<PublishedSkillCourse[
   return courses.map((course) => {
     const instructor = profiles.get(course.instructor_id);
     const ratings = reviews.get(course.id) ?? [];
+    const bdtPrice = Number(course.price_bdt ?? 500);
     return {
       id: course.id,
       title: course.title,
       description: course.description ?? "",
       type: course.type,
       durationMinutes: course.duration_minutes,
-      creditCost: course.credit_cost,
+      priceBdt: bdtPrice,
+      bdtCost: bdtPrice,
       category: categories.get(course.category_id) ?? "Other",
       instructorId: course.instructor_id,
       instructorName: instructor?.display_name ?? "Skill Swap member",
@@ -442,20 +444,24 @@ export async function listAdminWalletUsers(): Promise<AdminWalletUser[]> {
     id: row.id,
     display_name: row.display_name,
     email: row.email ?? "",
-    credits_balance: Number(row.credits_balance ?? 0),
+    bdt_balance: Number(row.bdt_balance ?? 0),
   }));
 }
 
-export async function adminDepositCredits(userId: string, amountCredits: number) {
-  const { data, error } = await supabase.rpc("ss_admin_deposit_credits", {
+export async function adminDepositBdt(userId: string, amountBdt: number) {
+  const { data, error } = await supabase.rpc("ss_admin_deposit_bdt", {
     p_user_id: userId,
-    p_amount_credits: amountCredits,
+    p_amount_bdt: amountBdt,
     p_note: "Manual cash deposit",
   });
   if (error) throw error;
   window.dispatchEvent(new Event("ss_wallet_updated"));
   window.dispatchEvent(new Event("ss_user_changed"));
-  return data?.[0] as { transaction_id: string; user_id: string; amount_credits: number; balance_after: number; created_at: string } | undefined;
+  return data?.[0] as { transaction_id: string; user_id: string; amount_bdt: number; balance_after: number; created_at: string } | undefined;
+}
+
+export async function adminDepositCredits(userId: string, amountCredits: number) {
+  return adminDepositBdt(userId, amountCredits * 120);
 }
 
 export async function listSkillSwapListings() {
@@ -474,10 +480,11 @@ export async function createSkillSwapListing(input: SkillSwapListingInput) {
   if (input.exchangeType !== "paid") {
     throw new Error("Free skill swaps do not use the paid-course escrow flow yet.");
   }
-  const creditCost = input.priceCredits ?? (input.priceBdt ? Math.ceil(input.priceBdt / 120) : 0);
-  if (!Number.isInteger(creditCost) || creditCost < 2) {
-    throw new Error("Set a service price of at least 2 credits.");
+  const priceBdt = input.priceBdt ?? (input.priceCredits ? input.priceCredits * 120 : 500);
+  if (priceBdt < 10) {
+    throw new Error("Set a service price of at least ৳10 BDT.");
   }
+  const legacyCreditCost = Math.ceil(priceBdt / 120);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
@@ -504,9 +511,10 @@ export async function createSkillSwapListing(input: SkillSwapListingInput) {
       type: "service",
       status: "published",
       duration_minutes: input.durationMinutes,
-      credit_cost: creditCost,
+      credit_cost: legacyCreditCost,
+      price_bdt: priceBdt,
     })
-    .select("id, title, description, type, duration_minutes, credit_cost, created_at")
+    .select("id, title, description, type, duration_minutes, credit_cost, price_bdt, created_at")
     .single();
   if (error) throw error;
   return data;
@@ -714,77 +722,98 @@ export async function rejectVerificationRequest(requestId: string, notes?: strin
 // DISPUTES QUEUE (ss_disputes & ss_resolve_dispute)
 // -------------------------------------------------------------
 
-const INITIAL_DISPUTES: PlatformDispute[] = [
-  {
-    id: "DSP-2026-001",
-    exchangeId: "exc-891",
-    courseTitle: "Python Backend & FastAPI Architecture Sprint",
-    learnerId: "usr-401",
-    learnerName: "Sabbir Hossain",
-    learnerAvatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=120&q=80",
-    providerId: "usr-402",
-    providerName: "Zahidul Islam",
-    providerAvatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&q=80",
-    amountCredits: 20,
-    amountBdt: 2400,
-    escrowStatus: "held",
-    disputeReason: "Provider was 40 minutes late and didn't cover the scheduled database indexing section.",
-    evidenceNotes: "Zoom chat log attached; agreed session was 90 minutes, ended abruptly after 30 minutes.",
-    disputeDate: "Yesterday, 3:30 PM",
-    status: "open",
-  },
-  {
-    id: "DSP-2026-002",
-    exchangeId: "exc-892",
-    courseTitle: "Figma UI/UX Component Library Review",
-    learnerId: "usr-403",
-    learnerName: "Mehnaz Tabassum",
-    learnerAvatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80",
-    providerId: "usr-404",
-    providerName: "Noah Williams",
-    providerAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80",
-    amountCredits: 24,
-    amountBdt: 2880,
-    escrowStatus: "submitted",
-    disputeReason: "Disagreement on deliverables. Learner requested additional wireframing beyond original scope.",
-    evidenceNotes: "Both parties provided course description screenshots. Partial agreement achieved on deliverables.",
-    disputeDate: "Sep 23, 2026",
-    status: "under_review",
-  },
-  {
-    id: "DSP-2026-003",
-    exchangeId: "exc-885",
-    courseTitle: "Academic Research Methodology & SPSS",
-    learnerId: "usr-405",
-    learnerName: "Kazi Anisur",
-    learnerAvatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=120&q=80",
-    providerId: "usr-406",
-    providerName: "Priya Shah",
-    providerAvatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=120&q=80",
-    amountCredits: 18,
-    amountBdt: 2160,
-    escrowStatus: "held",
-    disputeReason: "Learner was unable to attend due to university lab clash; notified 5 hours in advance.",
-    evidenceNotes: "Provider agreed to refund; requesting moderator release.",
-    disputeDate: "Sep 18, 2026",
-    status: "resolved",
-    resolution: "refund_payer",
-    resolutionNote: "100% refunded to learner with provider consent.",
-    resolvedAt: "Sep 19, 2026",
-  },
-];
-
 export async function listDisputes(): Promise<PlatformDispute[]> {
-  const stored = localStorage.getItem("ss_disputes");
-  if (stored) {
-    try {
-      return JSON.parse(stored);
-    } catch {
-      // fallback
+  const { data: rows, error } = await supabase
+    .from("ss_disputes")
+    .select(`
+      *,
+      escrow:ss_escrow_transactions(
+        id,
+        payer_id,
+        payee_id,
+        course_id,
+        amount_credits,
+        amount_bdt,
+        gross_amount_bdt,
+        status,
+        proof_reference,
+        payer_note,
+        course:ss_courses(
+          id,
+          title
+        )
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  if (!rows || rows.length === 0) return [];
+
+  // Fetch participant profiles
+  const profileIds = [
+    ...new Set(
+      rows.flatMap((r: any) => [
+        r.opened_by,
+        r.escrow?.payer_id,
+        r.escrow?.payee_id,
+      ]).filter(Boolean)
+    ),
+  ];
+
+  const profilesMap = new Map<string, { id: string; display_name: string; avatar_url: string | null }>();
+  if (profileIds.length > 0) {
+    const { data: profiles, error: profError } = await supabase
+      .from("ss_public_profiles")
+      .select("id, display_name, avatar_url")
+      .in("id", profileIds);
+    if (!profError && profiles) {
+      profiles.forEach((p: any) => profilesMap.set(p.id, p));
     }
   }
-  localStorage.setItem("ss_disputes", JSON.stringify(INITIAL_DISPUTES));
-  return INITIAL_DISPUTES;
+
+  const defaultLearnerAvatar = "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=120&q=80";
+  const defaultProviderAvatar = "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=120&q=80";
+
+  return rows.map((row: any) => {
+    const escrow = row.escrow;
+    const payerId = escrow?.payer_id || row.opened_by;
+    const payeeId = escrow?.payee_id;
+    const payer = payerId ? profilesMap.get(payerId) : undefined;
+    const payee = payeeId ? profilesMap.get(payeeId) : undefined;
+
+    const amountCredits = Number(escrow?.amount_credits ?? 0);
+    const amountBdt = Number(
+      escrow?.gross_amount_bdt ??
+      escrow?.amount_bdt ??
+      (amountCredits > 0 ? amountCredits * 120 : 0)
+    );
+
+    let escrowStatus: "submitted" | "verified" | "held" = "held";
+    if (escrow?.status === "submitted") escrowStatus = "submitted";
+    else if (escrow?.status === "verified") escrowStatus = "verified";
+
+    return {
+      id: row.id,
+      exchangeId: row.escrow_transaction_id || escrow?.id || "",
+      courseTitle: escrow?.course?.title || "Skill Exchange Session",
+      learnerId: payerId || "",
+      learnerName: payer?.display_name || "Learner (Payer)",
+      learnerAvatar: payer?.avatar_url || defaultLearnerAvatar,
+      providerId: payeeId || "",
+      providerName: payee?.display_name || "Provider (Tutor)",
+      providerAvatar: payee?.avatar_url || defaultProviderAvatar,
+      amountCredits: amountCredits || (amountBdt > 0 ? Math.ceil(amountBdt / 120) : 0),
+      amountBdt,
+      escrowStatus,
+      disputeReason: row.reason || "No grievance specified.",
+      evidenceNotes: escrow?.proof_reference || escrow?.payer_note || "Session logs & transaction records",
+      disputeDate: new Date(row.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      status: (row.status as PlatformDispute["status"]) || "open",
+      resolution: (row.resolution as PlatformDispute["resolution"]) || undefined,
+      resolutionNote: row.resolution_note || undefined,
+      resolvedAt: row.resolved_at ? new Date(row.resolved_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : undefined,
+    };
+  });
 }
 
 export async function resolveDispute(
@@ -792,134 +821,107 @@ export async function resolveDispute(
   resolution: "refund_payer" | "release_provider" | "split",
   note?: string
 ): Promise<PlatformDispute> {
-  const disputes = await listDisputes();
-  const index = disputes.findIndex((d) => d.id === disputeId);
-  if (index === -1) throw new Error("Dispute not found");
+  const { error } = await supabase.rpc("ss_resolve_dispute", {
+    p_dispute_id: disputeId,
+    p_resolution: resolution,
+    p_admin_notes: note ?? null,
+  });
+  if (error) throw error;
 
-  const d = disputes[index];
-  d.status = "resolved";
-  d.resolution = resolution;
-  d.resolutionNote =
-    note ||
-    (resolution === "refund_payer"
-      ? "100% refunded to learner."
-      : resolution === "release_provider"
-      ? "Funds released to provider (5% platform fee collected)."
-      : "50/50 split applied between learner and provider.");
-  d.resolvedAt = "Just now";
-
-  localStorage.setItem("ss_disputes", JSON.stringify(disputes));
   window.dispatchEvent(new Event("ss_disputes_changed"));
+  window.dispatchEvent(new Event("ss_wallet_updated"));
+  window.dispatchEvent(new Event("ss_user_changed"));
+
+  const disputes = await listDisputes();
+  const resolved = disputes.find((d) => d.id === disputeId);
 
   // Automated Server Notification & Email Dispatch Hook
-  try {
-    const { triggerDisputeResolvedNotification } = await import("@/server/notifications");
-    await triggerDisputeResolvedNotification({
-      disputeId: d.id,
-      resolution,
-      courseTitle: d.courseTitle,
-      learnerId: d.learnerId,
-      learnerName: d.learnerName,
-      providerId: d.providerId,
-      providerName: d.providerName,
-      amountCredits: d.amountCredits,
-      amountBdt: d.amountBdt,
-      resolutionNote: d.resolutionNote,
-    });
-  } catch (err) {
-    console.error("[Notification Trigger Error]", err);
+  if (resolved) {
+    try {
+      const { triggerDisputeResolvedNotification } = await import("@/server/notifications");
+      await triggerDisputeResolvedNotification({
+        disputeId: resolved.id,
+        resolution,
+        courseTitle: resolved.courseTitle,
+        learnerId: resolved.learnerId,
+        learnerName: resolved.learnerName,
+        providerId: resolved.providerId,
+        providerName: resolved.providerName,
+        amountCredits: resolved.amountCredits,
+        amountBdt: resolved.amountBdt,
+        resolutionNote: note || resolved.resolutionNote,
+      });
+    } catch (err) {
+      console.error("[Notification Trigger Error]", err);
+    }
+    return resolved;
   }
 
-  return disputes[index];
+  return {
+    id: disputeId,
+    exchangeId: "",
+    courseTitle: "Resolved Dispute",
+    learnerId: "",
+    learnerName: "Learner",
+    learnerAvatar: "",
+    providerId: "",
+    providerName: "Provider",
+    providerAvatar: "",
+    amountCredits: 0,
+    amountBdt: 0,
+    escrowStatus: "held",
+    disputeReason: "",
+    evidenceNotes: "",
+    disputeDate: new Date().toLocaleDateString(),
+    status: "resolved",
+    resolution,
+    resolutionNote: note,
+    resolvedAt: "Just now",
+  };
 }
 
 // -------------------------------------------------------------
 // WALLET MANAGEMENT (bKash, Nagad, Balances & Transactions)
 // -------------------------------------------------------------
 
-const INITIAL_TRANSACTIONS: WalletTransaction[] = [
-  {
-    id: "tx-1",
-    type: "spent",
-    title: "Figma Systems & Component Sprint",
-    counterparty: "Noah Williams",
-    amountCredits: 24,
-    amountBdt: 2880,
-    date: "Today, 4:00 PM",
-    status: "Held in escrow",
-    note: "Funds reserved safely in Escrow pending session completion.",
-  },
-  {
-    id: "tx-2",
-    type: "earned",
-    title: "React & TypeScript Code Review Session",
-    counterparty: "Jordan Kim",
-    amountCredits: 25,
-    amountBdt: 3000,
-    date: "Sep 24, 2026",
-    status: "Released",
-    note: "Settled to wallet balance after manual verification.",
-  },
-  {
-    id: "tx-3",
-    type: "fee",
-    title: "Platform Fee (5% Deduction)",
-    counterparty: "EwuSwap Platform",
-    amountCredits: 1,
-    amountBdt: 120,
-    date: "Sep 24, 2026",
-    status: "Deducted",
-    note: "500 bps platform fee reserved on 25-credit exchange.",
-  },
-  {
-    id: "tx-4",
-    type: "topup",
-    title: "bKash Wallet Top-Up",
-    counterparty: "bKash Payment Gateway",
-    method: "bkash",
-    amountCredits: 10,
-    amountBdt: 1200,
-    date: "Sep 22, 2026",
-    status: "Completed",
-    senderPhone: "01712345678",
-    trxId: "BL9X4029QA",
-    note: "Verified via bKash instant gateway.",
-  },
-  {
-    id: "tx-5",
-    type: "refund",
-    title: "Dispute Resolution Refund",
-    counterparty: "Moderator Resolution",
-    amountCredits: 18,
-    amountBdt: 2160,
-    date: "Sep 18, 2026",
-    status: "Refunded",
-    note: "Dispute settled in favor of payer.",
-  },
-];
+const INITIAL_TRANSACTIONS: WalletTransaction[] = [];
 
 export async function listWalletTransactions(): Promise<WalletTransaction[]> {
   const transactions = await listMyEscrowTransactions();
-  return transactions.map((transaction) => {
+  return transactions.flatMap((transaction) => {
     const status = transaction.status as string;
-    const type: WalletTransaction["type"] = status === "rejected" && transaction.isPayer
-      ? "refund"
-      : transaction.isPayer ? "spent" : "earned";
-    const displayStatus: WalletTransaction["status"] = status === "released"
-      ? "Released"
-      : status === "rejected" ? "Refunded" : "Held in escrow";
+    const grossBdtValue = transaction.gross_amount_bdt ?? transaction.amount_bdt;
+    const netBdtValue = transaction.net_amount_bdt;
+    const feeBdtValue = transaction.platform_fee_bdt;
+    const grossBdt = grossBdtValue == null ? null : Number(grossBdtValue);
+    const netBdt = netBdtValue == null ? null : Number(netBdtValue);
+    const feeBdt = feeBdtValue == null ? null : Number(feeBdtValue);
+    const title = transaction.course?.title || "Skill exchange";
+    const counterparty = transaction.isPayer ? transaction.payee.display_name : transaction.payer.display_name;
+    const date = new Date(transaction.created_at).toLocaleDateString();
+    const note = transaction.payer_note ?? undefined;
 
-    return {
-      id: transaction.id,
-      type,
-      title: transaction.course?.title || "Skill exchange",
-      counterparty: transaction.isPayer ? transaction.payee.display_name : transaction.payer.display_name,
-      amountCredits: Number(transaction.gross_amount_credits ?? transaction.amount_credits),
-      amountBdt: Number(transaction.gross_amount_credits ?? transaction.amount_credits) * 120,
-      date: new Date(transaction.created_at).toLocaleDateString(),
-      status: displayStatus,
-      note: transaction.payer_note ?? undefined,
-    };
+    if (status === "rejected") {
+      return transaction.isPayer ? [{
+        id: `${transaction.id}:refund`, type: "refund" as const, title: `${title} refund`, counterparty,
+        amountBdt: grossBdt, date, status: "Refunded" as const, note,
+      }] : [];
+    }
+
+    if (status === "released") {
+      if (transaction.isPayer) {
+        return [
+          { id: `${transaction.id}:spent`, type: "spent" as const, title, counterparty, amountBdt: grossBdt, date, status: "Released" as const, note },
+          ...(feeBdt && feeBdt > 0 ? [{ id: `${transaction.id}:fee`, type: "fee" as const, title: `${title} platform fee`, counterparty: "EwuSwap Platform", amountBdt: feeBdt, date, status: "Deducted" as const, note: undefined }] : []),
+        ];
+      }
+      return [{ id: `${transaction.id}:released`, type: "released" as const, title, counterparty, amountBdt: netBdt, date, status: "Released" as const, note }];
+    }
+
+    return [{
+      id: `${transaction.id}:held`, type: "held" as const, title: `${title} (held)`, counterparty,
+      amountBdt: transaction.isPayer ? grossBdt : netBdt, date, status: "Held in escrow" as const, note,
+    }];
   });
 }
 
@@ -990,6 +992,16 @@ export async function submitEscrowProof(transactionId: string) {
   return data;
 }
 
+export async function releaseEscrowByPayer(transactionId: string) {
+  const { data, error } = await supabase.rpc("ss_release_escrow_by_payer", {
+    p_transaction_id: transactionId,
+  });
+  if (error) throw error;
+  window.dispatchEvent(new Event("ss_wallet_updated"));
+  window.dispatchEvent(new Event("ss_user_changed"));
+  return data;
+}
+
 export async function openEscrowDispute(transactionId: string, reason: string) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
@@ -1039,6 +1051,7 @@ export async function listCommunityPosts(): Promise<CommunityPost[]> {
     const author = profiles.get(post.author_id);
     return {
       id: post.id,
+      authorId: post.author_id,
       authorName: author?.display_name ?? "EwuSwap member",
       authorAvatar: author?.avatar_url ?? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
       authorRole: author?.education ?? "EwuSwap member",
@@ -1172,18 +1185,22 @@ export async function withdrawWallet(input: {
 
 export async function createPaidEscrow(input: {
   payeeId: string;
-  courseId: string;
-  amountCredits: number;
+  courseId?: string;
+  amountCredits?: number;
+  amountBdt?: number;
   payerNote?: string;
 }) {
+  const bdtAmount = input.amountBdt ?? (input.amountCredits ? input.amountCredits * 120 : 500);
   const { data, error } = await supabase.rpc("ss_create_escrow", {
     p_payee_id: input.payeeId,
-    p_course_id: input.courseId,
-    p_amount_credits: input.amountCredits,
+    p_course_id: input.courseId ?? null,
+    p_amount_credits: input.amountCredits ?? Math.ceil(bdtAmount / 120),
+    p_amount_bdt: bdtAmount,
     p_payer_note: input.payerNote ?? null,
   });
   if (error) throw error;
   window.dispatchEvent(new Event("ss_wallet_updated"));
+  window.dispatchEvent(new Event("ss_user_changed"));
   return { id: data as string };
 }
 

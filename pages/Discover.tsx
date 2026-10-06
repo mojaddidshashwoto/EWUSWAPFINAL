@@ -151,7 +151,7 @@ export default function Discover() {
   const [serviceTitle, setServiceTitle] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
   const [serviceCategory, setServiceCategory] = useState("Design");
-  const [servicePriceCredits, setServicePriceCredits] = useState("10");
+  const [servicePriceBdt, setServicePriceBdt] = useState("500");
   const [serviceDuration, setServiceDuration] = useState("60");
 
   // Search & Filter States
@@ -160,7 +160,7 @@ export default function Discover() {
   const [selectedFormat, setSelectedFormat] = useState("All");
   const [selectedMinRating, setSelectedMinRating] = useState("0");
   const [selectedAvailability, setSelectedAvailability] = useState("All");
-  const [maxCredits, setMaxCredits] = useState<number>(30);
+  const [maxPriceBdt, setMaxPriceBdt] = useState<number>(5000);
   const [selectedLevel, setSelectedLevel] = useState("All");
 
   useEffect(() => {
@@ -177,7 +177,7 @@ export default function Discover() {
           category: course.category,
           type: course.type === "service" ? "Service" : "Course",
           creditCost: course.creditCost,
-          bdtCost: course.creditCost * 120,
+          bdtCost: course.priceBdt ?? course.bdtCost ?? 500,
           duration: `${course.durationMinutes} min`,
           rating: course.averageRating,
           reviewsCount: course.reviewCount,
@@ -205,7 +205,7 @@ export default function Discover() {
     setSelectedFormat("All");
     setSelectedMinRating("0");
     setSelectedAvailability("All");
-    setMaxCredits(30);
+    setMaxPriceBdt(5000);
     setSelectedLevel("All");
     toast.info("Filters reset to default.");
   };
@@ -221,7 +221,7 @@ export default function Discover() {
       category: course.category,
       type: course.type === "service" ? "Service" : "Course",
       creditCost: course.creditCost,
-      bdtCost: course.creditCost * 120,
+      bdtCost: course.priceBdt ?? course.bdtCost ?? 500,
       duration: `${course.durationMinutes} min`,
       rating: course.averageRating,
       reviewsCount: course.reviewCount,
@@ -235,14 +235,14 @@ export default function Discover() {
 
   const handlePublishService = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const priceCredits = Number(servicePriceCredits);
+    const priceBdt = Number(servicePriceBdt);
     const durationMinutes = Number(serviceDuration);
     if (serviceTitle.trim().length < 8 || serviceDescription.trim().length < 20) {
       toast.error("Use a title of at least 8 characters and a description of at least 20 characters.");
       return;
     }
-    if (!Number.isInteger(priceCredits) || priceCredits < 2 || !Number.isInteger(durationMinutes) || durationMinutes < 15) {
-      toast.error("Set a whole-number price of at least 2 credits and a session duration of at least 15 minutes.");
+    if (isNaN(priceBdt) || priceBdt < 10 || !Number.isInteger(durationMinutes) || durationMinutes < 15) {
+      toast.error("Set a price of at least ৳10 BDT and a session duration of at least 15 minutes.");
       return;
     }
 
@@ -257,7 +257,7 @@ export default function Discover() {
         learningGoals: [],
         durationMinutes,
         availability: "available",
-        priceCredits,
+        priceBdt,
       });
       await refreshPublishedListings();
       setIsPublishOpen(false);
@@ -295,15 +295,15 @@ export default function Discover() {
       // Availability Status
       if (selectedAvailability !== "All" && item.availabilityStatus !== selectedAvailability) return false;
 
-      // Max Credits
-      if (item.creditCost > maxCredits) return false;
+      // Max Price (BDT)
+      if (item.bdtCost > maxPriceBdt) return false;
 
       // Experience Level
       if (selectedLevel !== "All" && item.experienceLevel !== selectedLevel) return false;
 
       return true;
     });
-  }, [publishedListings, searchQuery, selectedCategory, selectedFormat, selectedMinRating, selectedAvailability, maxCredits, selectedLevel]);
+  }, [publishedListings, searchQuery, selectedCategory, selectedFormat, selectedMinRating, selectedAvailability, maxPriceBdt, selectedLevel]);
 
   const handleBook = (id: string) => {
     setLocation(`/skills/${id}`);
@@ -475,24 +475,24 @@ export default function Discover() {
               </Select>
             </div>
 
-            {/* Max Credits Slider/Input */}
+            {/* Max Price BDT Slider/Input */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center text-xs">
-                <Label className="font-semibold text-slate-700 dark:text-slate-300">Max Price (Credits)</Label>
-                <span className="font-extrabold text-indigo-600 dark:text-indigo-400">{maxCredits} Credits</span>
+                <Label className="font-semibold text-slate-700 dark:text-slate-300">Max Price (BDT)</Label>
+                <span className="font-extrabold text-indigo-600 dark:text-indigo-400">৳ {maxPriceBdt.toLocaleString()} BDT</span>
               </div>
               <input
                 type="range"
-                min="10"
-                max="30"
-                step="1"
-                value={maxCredits}
-                onChange={(e) => setMaxCredits(parseInt(e.target.value, 10))}
+                min="100"
+                max="5000"
+                step="50"
+                value={maxPriceBdt}
+                onChange={(e) => setMaxPriceBdt(parseInt(e.target.value, 10))}
                 className="w-full accent-indigo-600 cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-slate-400">
-                <span>10 Credits</span>
-                <span>30 Credits</span>
+                <span>৳ 100</span>
+                <span>৳ 5,000</span>
               </div>
             </div>
 
@@ -570,9 +570,9 @@ export default function Discover() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="service-price">Price (credits)</Label>
-                <Input id="service-price" type="number" min="2" step="1" value={servicePriceCredits} onChange={(event) => setServicePriceCredits(event.target.value)} required />
-                <p className="text-xs text-slate-500">BDT equivalent: ৳{(Number(servicePriceCredits) * 120 || 0).toLocaleString()}</p>
+                <Label htmlFor="service-price">Price (৳ BDT)</Label>
+                <Input id="service-price" type="number" min="10" step="10" value={servicePriceBdt} onChange={(event) => setServicePriceBdt(event.target.value)} required />
+                <p className="text-xs text-slate-500">Provider receives 95% after 5% platform fee</p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="service-duration">Duration (minutes)</Label>

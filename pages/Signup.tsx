@@ -16,7 +16,7 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(true);
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,10 +76,10 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4 py-8 sm:py-12 relative overflow-y-auto">
-      {/* Decorative background glow */}
-      <div className="absolute top-1/4 right-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex flex-col items-center justify-center p-4 py-8 sm:py-12 relative overflow-x-hidden">
+      {/* Decorative background glow with pointer-events-none */}
+      <div className="absolute top-1/4 right-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
       <div className="w-full max-w-md relative z-10 my-auto">
         {/* Brand Header */}
@@ -96,7 +96,7 @@ export default function Signup() {
           </p>
         </div>
 
-        <Card className="border-slate-800 bg-slate-900/90 backdrop-blur-md shadow-2xl text-slate-100">
+        <Card className="border-slate-800 bg-slate-900/90 backdrop-blur-md shadow-2xl text-slate-100 relative z-20">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl font-bold text-white">Create an account</CardTitle>
             <CardDescription className="text-slate-400 text-xs">
@@ -162,7 +162,8 @@ export default function Signup() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300 transition-colors"
+                    className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -189,24 +190,28 @@ export default function Signup() {
               </div>
 
               {/* Terms Checkbox */}
-              <div className="flex items-start space-x-2 pt-1">
+              <div className="flex items-start space-x-2.5 pt-1 relative z-30">
                 <Checkbox
-                  id="terms"
+                  id="terms-checkbox"
                   checked={agreeTerms}
                   onCheckedChange={(checked) => setAgreeTerms(!!checked)}
-                  className="mt-0.5 border-slate-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                  className="mt-0.5 border-slate-600 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 cursor-pointer"
                 />
-                <Label htmlFor="terms" className="text-xs text-slate-400 cursor-pointer leading-tight">
-                  I agree to the <span className="text-indigo-400 hover:underline">Terms of Service</span> and{" "}
-                  <span className="text-indigo-400 hover:underline">Privacy Policy</span>.
+                <Label
+                  htmlFor="terms-checkbox"
+                  className="text-xs text-slate-300 cursor-pointer leading-tight select-none"
+                >
+                  I agree to the <span className="text-indigo-400 hover:underline font-semibold">Terms of Service</span> and{" "}
+                  <span className="text-indigo-400 hover:underline font-semibold">Privacy Policy</span>.
                 </Label>
               </div>
 
               {/* Submit Button */}
               <Button
+                id="signup-submit-button"
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/25 transition-all mt-2"
+                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/25 transition-all mt-2 cursor-pointer relative z-30 h-10"
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">

@@ -328,7 +328,7 @@ export default function Onboarding() {
                     </div>
                     <CardTitle className="text-2xl font-bold text-white">What can you teach?</CardTitle>
                     <CardDescription className="text-slate-400 text-xs">
-                      Share the skills or expertise you can offer in return for credits or swaps.
+                      Share the skills or expertise you can offer in return for BDT or swaps.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">

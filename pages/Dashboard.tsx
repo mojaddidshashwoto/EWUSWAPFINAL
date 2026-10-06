@@ -124,20 +124,22 @@ export default function Dashboard() {
           bdtBalance: currentUser?.bdtBalance ?? 0,
         });
         const mappedTransactions = transactions.map((transaction) => {
-            const counterparty = transaction.isPayer ? transaction.payee : transaction.payer;
-            const createdAt = new Date(transaction.created_at);
-            return {
-              id: transaction.id,
-              title: transaction.course?.title || "Skill exchange",
-              counterpartyName: counterparty.display_name,
-              counterpartyAvatar: counterparty.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
-              date: createdAt.toLocaleDateString(),
-              time: createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
-              format: "Coordinate with your exchange partner",
-              credits: Number(transaction.gross_amount_credits ?? transaction.amount_credits),
-              status: transaction.status,
-            };
-          });
+          const counterparty = transaction.isPayer ? transaction.payee : transaction.payer;
+          const createdAt = new Date(transaction.created_at);
+          const amountBdt = Number(transaction.gross_amount_bdt ?? (transaction.gross_amount_credits ? transaction.gross_amount_credits * 120 : (transaction.amount_bdt ?? transaction.amount_credits * 120)));
+          return {
+            id: transaction.id,
+            title: transaction.course?.title || "Skill exchange",
+            counterpartyName: counterparty.display_name,
+            counterpartyAvatar: counterparty.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
+            date: createdAt.toLocaleDateString(),
+            time: createdAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+            format: "Coordinate with your exchange partner",
+            bdt: amountBdt,
+            credits: amountBdt,
+            status: transaction.status,
+          };
+        });
         setEscrowHistory(mappedTransactions);
         setActiveEscrows(mappedTransactions.filter((transaction) => ["pending", "submitted", "verified"].includes(transaction.status)));
         setRecommendedSkills(courses.slice(0, 4).map((course) => ({
@@ -148,8 +150,7 @@ export default function Dashboard() {
           isVerified: course.isVerified,
           category: course.category,
           type: course.type === "service" ? "Service" : "Course",
-          creditCost: course.creditCost,
-          bdtCost: course.creditCost * 120,
+          bdtCost: course.priceBdt ?? (course.creditCost ? course.creditCost * 120 : 0),
           duration: `${course.durationMinutes} min`,
           rating: course.averageRating,
           reviewsCount: course.reviewCount,
@@ -215,40 +216,32 @@ export default function Dashboard() {
             
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Your Wallet</span>
+                <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Your Balance</span>
                 <span className="text-[10px] bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium">
-                  5% Platform Fee Protected
+                  5% Platform Protected
                 </span>
               </div>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {/* Balances */}
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-950/60 border border-indigo-500/20">
-                <div>
-                  <p className="text-[10px] text-slate-400 font-medium">Available Credits</p>
-                  <div className="flex items-center gap-1.5 text-xl font-black text-indigo-300 mt-0.5">
-                    <Coins className="w-5 h-5 text-indigo-400" />
-                    <span>{user.creditsBalance}</span>
-                  </div>
+              {/* Single BDT Balance */}
+              <div className="p-4 rounded-xl bg-slate-950/70 border border-indigo-500/20">
+                <p className="text-xs text-indigo-200 font-medium">Available BDT Balance</p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-3xl font-black tracking-tight text-emerald-400">৳ {user.bdtBalance.toLocaleString()}</span>
+                  <span className="text-xs text-slate-400 font-semibold">BDT</span>
                 </div>
-                <div>
-                  <p className="text-[10px] text-slate-400 font-medium">BDT Equivalent</p>
-                  <div className="flex items-center gap-1.5 text-xl font-black text-emerald-400 mt-0.5">
-                    <Wallet className="w-5 h-5" />
-                    <span>৳ {user.bdtBalance}</span>
-                  </div>
-                </div>
+                <p className="text-[11px] text-slate-400 mt-1">Single source of truth for skill swaps & escrow</p>
               </div>
 
               {/* Wallet Action Buttons */}
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <Button
-                  onClick={() => setEarnModalOpen(true)}
+                  onClick={() => setLocation("/wallet")}
                   className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md gap-1.5"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Earn Credits
+                  <Wallet className="w-3.5 h-3.5" />
+                  Manage Wallet
                 </Button>
                 <Button
                   onClick={() => setHistoryModalOpen(true)}

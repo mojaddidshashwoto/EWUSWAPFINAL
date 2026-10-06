@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { getProfileDetails, listProfileReviews, updateProfileDetails, uploadProfileAvatar } from "@/lib/supabase";
+import { createConversation, getProfileDetails, listProfileReviews, updateProfileDetails, uploadProfileAvatar } from "@/lib/supabase";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { toast } from "sonner";
 
 
 const SAMPLE_PROFILE = {
+  id: "usr-aisha",
   username: "aisha",
   name: "Aisha Rahman",
   role: "Computer Science & Design Student",
@@ -72,7 +73,7 @@ const AVAILABILITY_BADGES = {
 };
 
 export default function UserProfile() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
   const [profile, setProfile] = useState(SAMPLE_PROFILE);
@@ -107,6 +108,7 @@ export default function UserProfile() {
 
     setProfile((current) => ({
       ...current,
+      id: profileId,
       name: user?.displayName || "EwuSwap member",
       role: "EwuSwap member",
       avatarUrl: user?.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
@@ -130,6 +132,7 @@ export default function UserProfile() {
         const skills = typeof row.skills === "string" ? row.skills.split(",").map((item: string) => item.trim()).filter(Boolean) : [];
         setProfile((current) => ({
           ...current,
+          id: row.id || profileId,
           name: row.display_name || "EwuSwap member",
           role: row.education || "EwuSwap member",
           avatarUrl: row.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
@@ -173,8 +176,22 @@ export default function UserProfile() {
     toast.success(isFollowing ? `Unfollowed ${profile.name}` : `You are now following ${profile.name}`);
   };
 
-  const handleMessage = () => {
-    toast.info(`Opening direct message conversation with ${profile.name}...`);
+  const handleMessage = async () => {
+    const targetUserId = profile.id || (requestedProfileId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedProfileId) ? requestedProfileId : undefined);
+    if (!targetUserId) {
+      toast.error("Cannot start conversation: invalid user profile.");
+      return;
+    }
+    if (user?.id && targetUserId === user.id) {
+      toast.error("You cannot message yourself.");
+      return;
+    }
+    try {
+      await createConversation(targetUserId);
+      setLocation("/messages");
+    } catch (err: any) {
+      toast.error(err?.message || `Could not open conversation with ${profile.name}.`);
+    }
   };
 
   const handleRequestExchange = () => {

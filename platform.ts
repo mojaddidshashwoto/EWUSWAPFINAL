@@ -48,12 +48,12 @@ export function calculateEscrowQuote(amountBdt: number, feeRateBps = PLATFORM_FE
   const providerNetBdt = roundedBdt - platformFeeBdt;
   if (providerNetBdt < 1) throw new Error("Escrow amount must cover the platform fee");
 
-  const quote: EscrowQuote = {
+  const quote = {
     grossCredits: roundedBdt,
     platformFeeCredits: platformFeeBdt,
     providerNetCredits: providerNetBdt,
     feeRateBps,
-  };
+  } as EscrowQuote;
 
   Object.defineProperties(quote, {
     grossBdt: { value: roundedBdt, enumerable: false, writable: true, configurable: true },

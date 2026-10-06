@@ -14,7 +14,6 @@ import {
   Bell,
   Menu,
   X,
-  Coins,
   Wallet,
   Award,
   LogOut,
@@ -85,7 +84,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [user, setUser] = useState({
     displayName: "Guest User",
     email: "",
-    creditsBalance: 0,
     bdtBalance: 0,
     avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
     isVerified: false,
@@ -98,7 +96,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       setUser({
         displayName: current.displayName || current.name || "Aisha Rahman",
         email: current.email || "aisha@ewu.edu.bd",
-        creditsBalance: current.credits ?? 24,
         bdtBalance: current.bdtBalance ?? 2880,
         avatarUrl: current.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=85",
         isVerified: current.isVerified ?? true,
@@ -333,16 +330,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Header Action Badges & Profile Dropdown */}
           <div className="flex items-center gap-3">
-            {/* Currency Pill Badges */}
             <Link
               href="/wallet"
               className="flex items-center gap-2 bg-slate-100 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800 text-xs font-bold hover:border-indigo-400/50 transition-colors"
             >
-              <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 bg-white dark:bg-slate-900 rounded-lg shadow-xs">
-                <Coins className="w-3.5 h-3.5" />
-                <span>{user.creditsBalance}</span>
-                <span className="text-[10px] font-normal text-slate-400 hidden lg:inline">Credits</span>
-              </div>
               <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 px-2 py-0.5">
                 <Wallet className="w-3.5 h-3.5" />
                 <span>৳ {user.bdtBalance.toLocaleString()}</span>

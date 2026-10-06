@@ -53,7 +53,7 @@ import {
   approveVerificationRequest,
   rejectVerificationRequest,
   listAdminWalletUsers,
-  adminDepositCredits,
+  adminDepositBdt,
   listDisputes,
   resolveDispute,
   type VerificationRequest,
@@ -68,8 +68,8 @@ export default function AdminDashboard() {
 
   // Tabs: overview | verifications | disputes
   const [activeTab, setActiveTab] = useState("overview");
-  const [creditUsers, setCreditUsers] = useState<AdminWalletUser[]>([]);
-  const [creditUsersLoading, setCreditUsersLoading] = useState(false);
+  const [walletUsers, setWalletUsers] = useState<AdminWalletUser[]>([]);
+  const [walletUsersLoading, setWalletUsersLoading] = useState(false);
   const [depositAmounts, setDepositAmounts] = useState<Record<string, string>>({});
   const [depositingUserId, setDepositingUserId] = useState<string | null>(null);
 
@@ -111,41 +111,41 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  const loadCreditUsers = async () => {
-    setCreditUsersLoading(true);
+  const loadWalletUsers = async () => {
+    setWalletUsersLoading(true);
     try {
-      setCreditUsers(await listAdminWalletUsers());
+      setWalletUsers(await listAdminWalletUsers());
     } catch (error: any) {
       toast.error(error?.message || "Could not load wallet users.");
     } finally {
-      setCreditUsersLoading(false);
+      setWalletUsersLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user?.role === "admin") loadCreditUsers();
+    if (user?.role === "admin") loadWalletUsers();
   }, [user?.role]);
 
   const handleManualDeposit = async (targetUser: AdminWalletUser) => {
     const amount = Number(depositAmounts[targetUser.id]);
-    if (!Number.isInteger(amount) || amount <= 0 || amount > 100000) {
-      toast.error("Enter a whole-number deposit from 1 to 100,000 credits.");
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1000000) {
+      toast.error("Enter a valid deposit amount between ৳1 and ৳1,000,000 BDT.");
       return;
     }
 
     setDepositingUserId(targetUser.id);
     try {
-      const result = await adminDepositCredits(targetUser.id, amount);
+      const result = await adminDepositBdt(targetUser.id, amount);
       if (!result) throw new Error("Deposit completed but no audit result was returned.");
-      setCreditUsers((current) => current.map((profile) => profile.id === targetUser.id
-        ? { ...profile, credits_balance: result.balance_after }
+      setWalletUsers((current) => current.map((profile) => profile.id === targetUser.id
+        ? { ...profile, bdt_balance: result.balance_after }
         : profile));
       setDepositAmounts((current) => ({ ...current, [targetUser.id]: "" }));
-      toast.success(`${amount} credits deposited to ${targetUser.display_name}.`, {
-        description: `New balance: ${result.balance_after} credits. Audit transaction recorded.`,
+      toast.success(`৳ ${amount} BDT deposited to ${targetUser.display_name}.`, {
+        description: `New balance: ৳ ${result.balance_after} BDT. Audit transaction recorded.`,
       });
     } catch (error: any) {
-      toast.error(error?.message || "Credit deposit failed.");
+      toast.error(error?.message || "BDT deposit failed.");
     } finally {
       setDepositingUserId(null);
     }
@@ -331,7 +331,7 @@ export default function AdminDashboard() {
                 value="credit-management"
                 className="rounded-xl text-xs font-bold py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
               >
-                Credit Management
+                Wallet & BDT Management
               </TabsTrigger>
             )}
           </TabsList>
@@ -518,16 +518,16 @@ export default function AdminDashboard() {
               <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-xs">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <Coins className="h-4 w-4 text-amber-500" /> Manual Credit Deposits
+                    <Coins className="h-4 w-4 text-amber-500" /> Manual BDT Wallet Deposits
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    Deposit credits received in person. Every deposit increments the balance and records an immutable audit entry.
+                    Deposit BDT funds received via campus cash/bKash. Every deposit increments `bdt_balance` and records an immutable audit entry.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {creditUsersLoading ? (
+                  {walletUsersLoading ? (
                     <p className="py-8 text-center text-sm text-slate-500">Loading users…</p>
-                  ) : creditUsers.length === 0 ? (
+                  ) : walletUsers.length === 0 ? (
                     <p className="py-8 text-center text-sm text-slate-500">No user profiles found.</p>
                   ) : (
                     <div className="overflow-x-auto">
@@ -536,26 +536,28 @@ export default function AdminDashboard() {
                           <tr>
                             <th className="px-3 py-3 font-semibold">User</th>
                             <th className="px-3 py-3 font-semibold">Email</th>
-                            <th className="px-3 py-3 text-right font-semibold">Current Credits</th>
-                            <th className="px-3 py-3 font-semibold">Deposit Credits</th>
+                            <th className="px-3 py-3 text-right font-semibold">Current BDT Balance</th>
+                            <th className="px-3 py-3 font-semibold">Deposit BDT</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {creditUsers.map((profile) => (
+                          {walletUsers.map((profile) => (
                             <tr key={profile.id} className="border-b last:border-0">
                               <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white">{profile.display_name}</td>
                               <td className="px-3 py-3 text-slate-500">{profile.email}</td>
-                              <td className="px-3 py-3 text-right font-bold tabular-nums">{profile.credits_balance}</td>
+                              <td className="px-3 py-3 text-right font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                ৳ {(profile.bdt_balance ?? 0).toLocaleString()} BDT
+                              </td>
                               <td className="px-3 py-3">
                                 <div className="flex items-center gap-2">
                                   <Input
-                                    aria-label={`Credits to deposit for ${profile.display_name}`}
+                                    aria-label={`BDT to deposit for ${profile.display_name}`}
                                     type="number"
                                     min="1"
-                                    max="100000"
-                                    step="1"
+                                    max="1000000"
+                                    step="10"
                                     inputMode="numeric"
-                                    placeholder="Amount"
+                                    placeholder="Amount ৳"
                                     value={depositAmounts[profile.id] ?? ""}
                                     onChange={(event) => setDepositAmounts((current) => ({ ...current, [profile.id]: event.target.value }))}
                                     className="h-9 w-28"
@@ -565,7 +567,7 @@ export default function AdminDashboard() {
                                     disabled={depositingUserId === profile.id}
                                     onClick={() => handleManualDeposit(profile)}
                                   >
-                                    {depositingUserId === profile.id ? "Depositing…" : "Deposit Credits"}
+                                    {depositingUserId === profile.id ? "Depositing…" : "Deposit BDT"}
                                   </Button>
                                 </div>
                               </td>

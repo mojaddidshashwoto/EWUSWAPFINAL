@@ -108,8 +108,8 @@ export default function SkillDetail() {
           title: course.title,
           category: course.category,
           type: course.type === "service" ? "Service" : "Course",
-          creditCost: course.creditCost,
-          bdtCost: course.creditCost * 120,
+          creditCost: Math.ceil(course.priceBdt / 120),
+          bdtCost: course.priceBdt,
           duration: `${course.durationMinutes} min`,
           rating: course.averageRating,
           reviewsCount: course.reviewCount,
@@ -278,8 +278,7 @@ export default function SkillDetail() {
               <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white">
                 <p className="text-[10px] uppercase font-bold tracking-wider opacity-80">Exchange Pricing</p>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-3xl font-black">{skill.creditCost} Credits</span>
-                  <span className="text-xs text-indigo-200">or ৳ {skill.bdtCost} BDT</span>
+                  <span className="text-3xl font-black">৳ {skill.bdtCost.toLocaleString()} BDT</span>
                 </div>
               </div>
 
@@ -300,7 +299,7 @@ export default function SkillDetail() {
                       {/* Primary CTA 1: Request Free Swap */}
                       <Button
                         onClick={() => setSwapModalOpen(true)}
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-2 py-5"
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-emerald-600/20 gap-2 py-5 cursor-pointer"
                       >
                         <RefreshCw className="w-4 h-4" />
                         Request Free Swap (Skill Exchange)
@@ -311,10 +310,10 @@ export default function SkillDetail() {
                         onClick={() => setPayModalOpen(true)}
                         disabled={!isLiveListing}
                         title={isLiveListing ? "Pay for this published service" : "This preview listing is not available for checkout"}
-                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/20 gap-2 py-5"
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/20 gap-2 py-5 cursor-pointer"
                       >
-                        <Coins className="w-4 h-4" />
-                        Pay for Service ({skill.creditCost} Credits)
+                        <Wallet className="w-4 h-4" />
+                        Pay for Service (৳ {skill.bdtCost.toLocaleString()} BDT)
                       </Button>
                     </>
                   )}
@@ -325,7 +324,7 @@ export default function SkillDetail() {
                     <LockKeyhole className="w-3.5 h-3.5 text-indigo-500" />
                     <span>5% Escrow Protection</span>
                   </div>
-                  <p>Credits are held safely in escrow and released only after your session is verified.</p>
+                  <p>Funds are held safely in escrow and released only after your session is verified.</p>
                 </div>
               </CardContent>
             </Card>
@@ -419,6 +418,7 @@ export default function SkillDetail() {
         courseId={skill.id}
         payeeId={skill.teacher.id}
         amountCredits={skill.creditCost}
+        amountBdt={skill.bdtCost}
         onConfirmSuccess={() => setPayModalOpen(false)}
       />
     </DashboardLayout>
