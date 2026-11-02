@@ -171,7 +171,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Logo / Brand */}
         <div className="p-5 border-b border-white/10 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2 group">
-            <Logo size="md" tagline className="transition-transform duration-300 group-hover:scale-[1.02]" />
+            <Logo size="md" tone="light" tagline className="transition-transform duration-300 group-hover:scale-[1.02]" />
           </Link>
         </div>
 
@@ -281,7 +281,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <SheetContent side="left" className="w-72 bg-[#0a0a0b]/95 backdrop-blur-3xl p-0 border-r border-white/10 text-white">
                 <SheetHeader className="p-5 border-b border-white/10">
                   <SheetTitle className="flex items-center gap-2 text-left">
-                    <Logo size="sm" />
+                    <Logo size="sm" tone="light" />
                   </SheetTitle>
                 </SheetHeader>
                 <div className="px-3 py-4 space-y-1 overflow-y-auto max-h-[calc(100vh-80px)]">
@@ -325,7 +325,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Sheet>
 
             <Link href="/dashboard" className="transition-opacity hover:opacity-85">
-              <Logo size="sm" />
+              <Logo size="sm" tone="light" />
             </Link>
           </div>
 

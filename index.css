@@ -392,6 +392,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .brand-dot { position: absolute; color: var(--coral); font-size: 15px; right: 5px; bottom: 1px; transform: rotate(7deg); }
 .brand-name { letter-spacing: .15em; color: var(--navy); font-size: 14px; line-height: 1; font-weight: 800; }
 .brand-sub { margin-top: 6px; color: var(--muted-ink); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+.sidebar .brand { position: relative; display: block; width: 160px; height: 54px; padding: 0; background: url("/logo.png") left center / contain no-repeat; }
+.sidebar .brand > * { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .main-nav { display: flex; align-items: center; gap: 5px; flex: 1; }
 .main-nav button { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 9px; color: #7d8b90; background: transparent; font-size: 13px; font-weight: 700; transition: .18s ease; }
 .main-nav button:hover, .main-nav button.nav-active { color: var(--navy); background: #edf5f4; }

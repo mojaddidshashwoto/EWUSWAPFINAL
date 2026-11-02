@@ -399,12 +399,7 @@ export default function LandingPage() {
       <footer className="mt-auto border-t border-slate-800 bg-slate-950/80 py-12 px-4 sm:px-8 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
           <div className="space-y-3 md:col-span-1">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
-                E
-              </div>
-              <Logo size="sm" tone="light" />
-            </div>
+            <Logo size="sm" tone="light" />
             <p className="text-[11px] text-slate-500 leading-relaxed">
               Peer-to-peer knowledge exchange and escrow marketplace designed for East West University students.
             </p>

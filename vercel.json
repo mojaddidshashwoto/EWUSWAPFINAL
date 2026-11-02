@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
   "buildCommand": "pnpm build",
-  "outputDirectory": "dist/public",
+  "outputDirectory": "dist",
   "cleanUrls": true,
   "rewrites": [
     {
@@ -29,7 +29,7 @@
       ]
     },
     {
-      "source": "/(assets|logo.png|icon.png|apple-touch-icon.png|favicon.ico)",
+      "source": "/(assets|logo.png|logo-light.png|icon.png|apple-touch-icon.png|favicon.ico)",
       "headers": [
         {
           "key": "Cache-Control",
