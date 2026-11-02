@@ -1,4 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
+import {
+  CourseReviewInputSchema,
+  EscrowBookingInputSchema,
+  EscrowDisputeInputSchema,
+  MeetingDetailsInputSchema,
+  ProfileUpdateInputSchema,
+  ServiceListingInputSchema,
+  CommunityPostInputSchema,
+  validateAvatarFile,
+  sanitizeText,
+  isValidUUID,
+  formatValidationError,
+} from "./validation";
 
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL || "https://glpoowzygushtxwqmcxl.supabase.co",
@@ -272,18 +285,20 @@ export async function listProfileReviews(profileId: string): Promise<ProfileRevi
 }
 
 export async function submitReview(courseId: string, rating: number, comment: string, headline?: string) {
+  const parsed = CourseReviewInputSchema.safeParse({ courseId, rating, comment, headline });
+  if (!parsed.success) {
+    throw new Error(formatValidationError(parsed.error));
+  }
+  const validated = parsed.data;
+
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!user) throw new Error("You must be signed in to submit a review.");
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    throw new Error("Choose a rating from 1 to 5 stars.");
-  }
-  if (!comment.trim()) throw new Error("Write a comment before submitting your review.");
 
   const { data: escrow, error: escrowError } = await supabase
     .from("ss_escrow_transactions")
     .select("payee_id")
-    .eq("course_id", courseId)
+    .eq("course_id", validated.courseId)
     .eq("payer_id", user.id)
     .eq("status", "released")
     .order("released_at", { ascending: false })
@@ -295,12 +310,12 @@ export async function submitReview(courseId: string, rating: number, comment: st
   const { data, error } = await supabase
     .from("ss_course_reviews")
     .insert({
-      course_id: courseId,
+      course_id: validated.courseId,
       reviewer_id: user.id,
       reviewee_id: escrow.payee_id,
-      rating,
-      headline: headline?.trim() || null,
-      body: comment.trim(),
+      rating: validated.rating,
+      headline: validated.headline || null,
+      body: validated.comment,
     })
     .select("id, course_id, reviewer_id, reviewee_id, rating, headline, body, created_at")
     .single();
@@ -340,19 +355,25 @@ export async function updateProfilePrivacy(settings: PrivacySettings) {
 }
 
 export async function updateProfileDetails(details: ProfileDetails) {
+  const parsed = ProfileUpdateInputSchema.safeParse(details);
+  if (!parsed.success) {
+    throw new Error(formatValidationError(parsed.error));
+  }
+  const validated = parsed.data;
+
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!user) throw new Error("You must be signed in to update your profile.");
 
   const profileRow: Record<string, unknown> = { id: user.id };
-  if (details.displayName !== undefined) profileRow.display_name = details.displayName;
-  if (details.bio !== undefined) profileRow.bio = details.bio;
-  if (details.education !== undefined) profileRow.education = details.education;
-  if (details.skills !== undefined) profileRow.skills = Array.isArray(details.skills) ? details.skills.join(", ") : details.skills;
-  if (details.learningSkills !== undefined) profileRow.learning_skills = Array.isArray(details.learningSkills) ? details.learningSkills.join(", ") : details.learningSkills;
-  if (details.certifications !== undefined) profileRow.certifications = Array.isArray(details.certifications) ? details.certifications.join(", ") : details.certifications;
-  if (details.avatarUrl !== undefined || details.avatar_url !== undefined) {
-    profileRow.avatar_url = details.avatarUrl ?? details.avatar_url;
+  if (validated.displayName !== undefined) profileRow.display_name = validated.displayName;
+  if (validated.bio !== undefined) profileRow.bio = validated.bio;
+  if (validated.education !== undefined) profileRow.education = validated.education;
+  if (validated.skills !== undefined) profileRow.skills = validated.skills.join(", ");
+  if (validated.learningSkills !== undefined) profileRow.learning_skills = validated.learningSkills.join(", ");
+  if (validated.certifications !== undefined) profileRow.certifications = validated.certifications.join(", ");
+  if (validated.avatarUrl !== undefined || details.avatar_url !== undefined) {
+    profileRow.avatar_url = validated.avatarUrl ?? details.avatar_url;
   }
 
   const { data, error } = await supabase
@@ -381,12 +402,19 @@ export async function updateCallStatus(status: string) {
 
 export async function uploadProfileAvatar(file: File | Blob | string) {
   if (typeof file === "string") return { url: file, avatar_url: file };
+
+  const validation = validateAvatarFile(file);
+  if (!validation.valid) {
+    throw new Error(validation.error || "Invalid file for avatar upload.");
+  }
+
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!user) throw new Error("You must be signed in to upload a profile photo.");
 
-  const filename = file instanceof File ? file.name.replace(/\s+/g, "-") : "avatar-image";
-  const path = `${user.id}/${Date.now()}-${filename}`;
+  const rawFilename = file instanceof File ? file.name : "avatar-image.png";
+  const safeFilename = rawFilename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = `${user.id}/${Date.now()}-${safeFilename}`;
   const { error } = await supabase.storage.from("ss-profile-avatars").upload(path, file, {
     cacheControl: "3600",
     upsert: true,
@@ -520,40 +548,46 @@ export async function createSkillSwapListing(input: SkillSwapListingInput) {
   if (input.exchangeType !== "paid") {
     throw new Error("Free skill swaps do not use the paid-course escrow flow yet.");
   }
-  const priceBdt = input.priceBdt ?? (input.priceCredits ? input.priceCredits * 120 : 500);
-  if (priceBdt < 10) {
-    throw new Error("Set a service price of at least ৳10 BDT.");
+  const rawPriceBdt = input.priceBdt ?? (input.priceCredits ? input.priceCredits * 120 : 500);
+
+  const parsed = ServiceListingInputSchema.safeParse({
+    ...input,
+    priceBdt: rawPriceBdt,
+  });
+  if (!parsed.success) {
+    throw new Error(formatValidationError(parsed.error));
   }
-  const legacyCreditCost = Math.ceil(priceBdt / 120);
+  const validated = parsed.data;
+  const legacyCreditCost = Math.ceil(validated.priceBdt / 120);
 
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!user) throw new Error("You must be signed in to publish a service.");
 
-  const categorySlug = input.category.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const categorySlug = validated.category.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const { data: category, error: categoryError } = await supabase
     .from("ss_skill_categories")
     .select("id")
     .eq("slug", categorySlug)
     .maybeSingle();
   if (categoryError) throw categoryError;
-  if (!category) throw new Error(`The ${input.category} category is not configured in the marketplace.`);
+  if (!category) throw new Error(`The ${validated.category} category is not configured in the marketplace.`);
 
-  const titleSlug = input.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const titleSlug = validated.title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const { data, error } = await supabase
     .from("ss_courses")
     .insert({
       instructor_id: user.id,
       category_id: category.id,
-      title: input.title.trim(),
+      title: validated.title,
       slug: `${titleSlug}-${crypto.randomUUID()}`,
-      description: input.description.trim(),
+      description: validated.description,
       type: "service",
       status: "published",
-      duration_minutes: input.durationMinutes,
+      duration_minutes: validated.durationMinutes,
       credit_cost: legacyCreditCost,
-      price_bdt: priceBdt,
-      delivery_mode: input.deliveryMode ?? "online",
+      price_bdt: validated.priceBdt,
+      delivery_mode: validated.deliveryMode ?? "online",
     })
     .select("id, title, description, type, duration_minutes, credit_cost, price_bdt, delivery_mode, created_at")
     .single();
@@ -1030,39 +1064,30 @@ export async function listMyEscrowTransactions(): Promise<UserEscrowTransaction[
 }
 
 export async function updateEscrowMeetingDetails(transactionId: string, meetingDetails: string) {
-  const trimmed = meetingDetails.trim();
+  const parsed = MeetingDetailsInputSchema.safeParse({ transactionId, meetingDetails });
+  if (!parsed.success) {
+    throw new Error(formatValidationError(parsed.error));
+  }
+  const validated = parsed.data;
+
   if (typeof window !== "undefined") {
     try {
-      localStorage.setItem(`ss_meeting_${transactionId}`, trimmed);
+      localStorage.setItem(`ss_meeting_${validated.transactionId}`, validated.meetingDetails);
     } catch {}
   }
 
-  try {
-    const { data, error } = await supabase.rpc("ss_update_escrow_meeting_details", {
-      p_transaction_id: transactionId,
-      p_meeting_details: trimmed,
-    });
-    if (!error && data) {
-      window.dispatchEvent(new Event("ss_exchanges_updated"));
-      return data;
-    }
-  } catch (rpcErr) {
-    console.warn("[Meeting Details] RPC not available, using direct update:", rpcErr);
-  }
-
-  const { data, error } = await supabase
-    .from("ss_escrow_transactions")
-    .update({ meeting_details: trimmed })
-    .eq("id", transactionId)
-    .select()
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("ss_update_escrow_meeting_details", {
+    p_transaction_id: validated.transactionId,
+    p_meeting_details: validated.meetingDetails,
+  });
 
   if (error) {
-    console.warn("[Meeting Details] Table update failed, persisted locally:", error.message);
+    console.error("[Meeting Details Update Error]", error);
+    throw new Error(error.message || "Could not update meeting details.");
   }
 
   window.dispatchEvent(new Event("ss_exchanges_updated"));
-  return data ?? { id: transactionId, meeting_details: trimmed };
+  return data ?? { id: validated.transactionId, meeting_details: validated.meetingDetails };
 }
 
 export async function submitEscrowProof(transactionId: string) {
@@ -1087,13 +1112,19 @@ export async function releaseEscrowByPayer(transactionId: string) {
 }
 
 export async function openEscrowDispute(transactionId: string, reason: string) {
+  const parsed = EscrowDisputeInputSchema.safeParse({ transactionId, reason });
+  if (!parsed.success) {
+    throw new Error(formatValidationError(parsed.error));
+  }
+  const validated = parsed.data;
+
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!user) throw new Error("You must be signed in to open a dispute.");
 
   const { data, error } = await supabase
     .from("ss_disputes")
-    .insert({ escrow_transaction_id: transactionId, opened_by: user.id, reason: reason.trim() })
+    .insert({ escrow_transaction_id: validated.transactionId, opened_by: user.id, reason: validated.reason })
     .select()
     .single();
   if (error) throw error;
@@ -1151,13 +1182,19 @@ export async function listCommunityPosts(): Promise<CommunityPost[]> {
 }
 
 export async function createCommunityPost(body: string, category: string) {
+  const parsed = CommunityPostInputSchema.safeParse({ body, category });
+  if (!parsed.success) {
+    throw new Error(formatValidationError(parsed.error));
+  }
+  const validated = parsed.data;
+
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!user) throw new Error("You must be signed in to publish a community post.");
 
   const { data, error } = await supabase
     .from("ss_social_posts")
-    .insert({ author_id: user.id, body: body.trim(), category, visibility: "everyone" })
+    .insert({ author_id: user.id, body: validated.body, category: validated.category, visibility: "everyone" })
     .select("id")
     .single();
   if (error) throw error;
@@ -1267,12 +1304,23 @@ export async function createPaidEscrow(input: {
   payerNote?: string;
 }) {
   const bdtAmount = input.amountBdt ?? (input.amountCredits ? input.amountCredits * 120 : 500);
+  const parsed = EscrowBookingInputSchema.safeParse({
+    payeeId: input.payeeId,
+    courseId: input.courseId || undefined,
+    amountBdt: bdtAmount,
+    payerNote: input.payerNote,
+  });
+  if (!parsed.success) {
+    throw new Error(formatValidationError(parsed.error));
+  }
+  const validated = parsed.data;
+
   const { data, error } = await supabase.rpc("ss_create_escrow", {
-    p_payee_id: input.payeeId,
-    p_course_id: input.courseId ?? null,
-    p_amount_credits: input.amountCredits ?? Math.ceil(bdtAmount / 120),
-    p_amount_bdt: bdtAmount,
-    p_payer_note: input.payerNote ?? null,
+    p_payee_id: validated.payeeId,
+    p_course_id: validated.courseId ?? null,
+    p_amount_credits: Math.ceil(validated.amountBdt / 120),
+    p_amount_bdt: validated.amountBdt,
+    p_payer_note: validated.payerNote ?? null,
   });
   if (error) throw error;
   window.dispatchEvent(new Event("ss_wallet_updated"));
@@ -1347,13 +1395,21 @@ export async function sendSupabaseRealtimeMessage(input: {
   conversationId: string;
   text: string;
 }) {
+  const cleanText = sanitizeText(input.text, 2000);
+  if (!cleanText) {
+    throw new Error("Message text cannot be empty.");
+  }
+  if (!isValidUUID(input.conversationId)) {
+    throw new Error("Invalid conversation ID format.");
+  }
+
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!user) throw new Error("You must be signed in to send a message.");
 
   const { data, error } = await supabase
     .from("ss_messages")
-    .insert({ conversation_id: input.conversationId, sender_id: user.id, body: input.text.trim() })
+    .insert({ conversation_id: input.conversationId, sender_id: user.id, body: cleanText })
     .select("id, conversation_id, sender_id, body, created_at")
     .single();
   if (error) throw error;

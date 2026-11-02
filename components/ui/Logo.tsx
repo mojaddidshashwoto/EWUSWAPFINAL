@@ -1,54 +1,59 @@
-import { useId } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
   className?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   tone?: "light" | "dark";
   tagline?: boolean;
 }
 
 const sizes = {
-  sm: { mark: "h-8 w-8", name: "text-base", tagline: "text-[9px]" },
-  md: { mark: "h-10 w-10", name: "text-lg", tagline: "text-[10px]" },
-  lg: { mark: "h-12 w-12", name: "text-xl", tagline: "text-[10px]" },
+  sm: { img: "h-8 max-w-[150px]", mark: "h-7 w-7", name: "text-base", tagline: "text-[9px]" },
+  md: { img: "h-10 max-w-[180px]", mark: "h-9 w-9", name: "text-lg", tagline: "text-[10px]" },
+  lg: { img: "h-12 max-w-[220px]", mark: "h-11 w-11", name: "text-xl", tagline: "text-[11px]" },
+  xl: { img: "h-16 max-w-[280px]", mark: "h-14 w-14", name: "text-2xl", tagline: "text-xs" },
 };
 
 export function Logo({ className, size = "md", tone = "dark", tagline = false }: LogoProps) {
-  const gradientId = `ewuswap-mark-${useId().replace(/:/g, "")}`;
+  const [imgError, setImgError] = useState(false);
   const textColor = tone === "light" ? "text-white" : "text-slate-900 dark:text-white";
-  const mutedColor = tone === "light" ? "text-white/60" : "text-muted-foreground";
+  const mutedColor = tone === "light" ? "text-slate-400" : "text-slate-500 dark:text-slate-400";
+  const accentColor = tone === "light" ? "text-blue-400" : "text-blue-600 dark:text-blue-400";
+
+  // Use the transparent official logos: logo-light.png on dark backgrounds, logo.png on light backgrounds
+  const logoSrc = tone === "light" ? "/logo-light.png" : "/logo.png";
 
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 40 40"
-        className={cn("shrink-0 drop-shadow-md", sizes[size].mark)}
-        fill="none"
-      >
-        <defs>
-          <linearGradient id={gradientId} x1="5" y1="4" x2="36" y2="38" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#5C55EE" />
-            <stop offset="1" stopColor="#3479D8" />
-          </linearGradient>
-        </defs>
-        <rect x="1" y="1" width="38" height="38" rx="13" fill={`url(#${gradientId})`} />
-        <path d="M11 15.5h14.5a5 5 0 0 1 0 10H23" stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="m27 21.5-4 4 4 4" stroke="#9BE7CF" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M29 24.5H14.5a5 5 0 0 1 0-10H16" stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="m13 18.5 4-4-4-4" stroke="#FFC1A9" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <span className="flex min-w-0 flex-col gap-1">
-        <span className={cn("font-extrabold leading-none tracking-tight", sizes[size].name, textColor)}>
-          Ewu<span className="text-indigo-500">Swap</span>
-        </span>
-        {tagline && (
-          <span className={cn("font-medium leading-none", sizes[size].tagline, mutedColor)}>
-            Campus skill exchange
+    <span className={cn("inline-flex flex-col items-start select-none", className)}>
+      {!imgError ? (
+        <img
+          src={logoSrc}
+          alt="EWUSwap"
+          onError={() => setImgError(true)}
+          className={cn("w-auto object-contain drop-shadow-sm transition-transform duration-200", sizes[size].img)}
+          draggable={false}
+        />
+      ) : (
+        <span className="inline-flex items-center gap-2.5">
+          <img
+            src="/logo-mark-hd.png"
+            alt="EWUSwap"
+            className={cn("shrink-0 object-contain drop-shadow-sm", sizes[size].mark)}
+            draggable={false}
+          />
+          <span className="flex min-w-0 flex-col leading-none">
+            <span className={cn("font-black tracking-tight leading-none", sizes[size].name, textColor)}>
+              EWU<span className={accentColor}>Swap</span>
+            </span>
           </span>
-        )}
-      </span>
+        </span>
+      )}
+      {tagline && (
+        <span className={cn("pl-1 text-[9px] font-medium tracking-wide leading-none mt-1 opacity-80", mutedColor)}>
+          Campus skill exchange
+        </span>
+      )}
     </span>
   );
 }

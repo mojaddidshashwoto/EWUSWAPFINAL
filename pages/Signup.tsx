@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowRight, Eye, EyeOff, Lock, Mail, Sparkles, User } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { Logo } from "@/components/ui/Logo";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -88,9 +89,7 @@ export default function Signup() {
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             Join the Skill Exchange Movement
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Ewu<span className="text-indigo-400">Swap</span>
-          </h1>
+          <Link href="/" className="inline-block mb-3 hover:opacity-90 transition-opacity"><Logo size="lg" tone="light" /></Link>
           <p className="text-slate-400 text-xs sm:text-sm mt-1">
             Create your free account and start trading knowledge.
           </p>
