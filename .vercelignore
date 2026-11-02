@@ -1,0 +1,8 @@
+.git
+.github
+.manus-logs
+node_modules
+supabase
+tests
+test-results
+*.log

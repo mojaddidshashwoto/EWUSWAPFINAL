@@ -1,13 +1,30 @@
-node_modules/
-dist/
-.vercel/
-.env
-.env.*
-!.env.example
-coverage/
-*.log
+# Dependencies
+node_modules
+.pnpm-store
+
+# Production build output
+dist
+dist-ssr
+*.local
+
+# Logs
 npm-debug.log*
-*.tsbuildinfo
-supabase/.temp/
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.manus-logs
+
+# Environment variables
+.env
+.env*.local
+!.env.example
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Vercel
 .vercel
-.env*

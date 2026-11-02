@@ -13,6 +13,7 @@ import {
   Camera, Laptop, Users, Calendar, Sparkles, Plus, X, ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
+import { Logo } from "@/components/ui/Logo";
 import { supabase, updateProfileDetails } from "@/lib/supabase";
 
 // Predefined Skill Options
@@ -207,9 +208,7 @@ export default function Onboarding() {
         {/* Top Header */}
         <div className="flex items-center justify-between mb-4 px-1">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-black text-white tracking-tight">
-              Ewu<span className="text-indigo-400">Swap</span>
-            </span>
+            <Logo size="sm" tone="light" />
             <span className="text-xs bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full font-medium">
               Profile Onboarding
             </span>

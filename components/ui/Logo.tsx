@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 import { useState } from "react";
+=======
+>>>>>>> origin/main
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -9,6 +12,7 @@ interface LogoProps {
 }
 
 const sizes = {
+<<<<<<< HEAD
   sm: { img: "h-8 max-w-[150px]", mark: "h-7 w-7", name: "text-base", tagline: "text-[9px]" },
   md: { img: "h-10 max-w-[180px]", mark: "h-9 w-9", name: "text-lg", tagline: "text-[10px]" },
   lg: { img: "h-12 max-w-[220px]", mark: "h-11 w-11", name: "text-xl", tagline: "text-[11px]" },
@@ -54,6 +58,24 @@ export function Logo({ className, size = "md", tone = "dark", tagline = false }:
           Campus skill exchange
         </span>
       )}
+=======
+  sm: "h-8",
+  md: "h-10",
+  lg: "h-12",
+};
+
+export function Logo({ className, size = "md", tone = "dark", tagline = false }: LogoProps) {
+  const mutedColor = tone === "light" ? "text-white/60" : "text-muted-foreground";
+
+  return (
+    <span className={cn("inline-flex min-w-0 flex-col items-start gap-1", className)}>
+      <img
+        src={tone === "light" ? "/logo-light.png" : "/logo.png"}
+        alt="EWUSwap"
+        className={cn("w-auto object-contain", sizes[size])}
+      />
+      {tagline && <span className={cn("pl-1 text-[10px] font-medium leading-none", mutedColor)}>Campus skill exchange</span>}
+>>>>>>> origin/main
     </span>
   );
 }

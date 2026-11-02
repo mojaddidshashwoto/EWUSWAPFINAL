@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, CheckCircle2, Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { Logo } from "@/components/ui/Logo";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -46,9 +47,7 @@ export default function ForgotPassword() {
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             Account Security
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">
-            Ewu<span className="text-indigo-400">Swap</span>
-          </h1>
+          <Logo size="md" tone="light" className="items-center" />
         </div>
 
         <Card className="border-slate-800 bg-slate-900/90 backdrop-blur-md shadow-2xl text-slate-100">

@@ -89,7 +89,7 @@ export default function Signup() {
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             Join the Skill Exchange Movement
           </div>
-          <Link href="/" className="inline-block mb-3 hover:opacity-90 transition-opacity"><Logo size="lg" tone="light" /></Link>
+<Link href="/" className="inline-block mb-3 hover:opacity-90 transition-opacity"><Logo size="lg" tone="light" /></Link>
           <p className="text-slate-400 text-xs sm:text-sm mt-1">
             Create your free account and start trading knowledge.
           </p>

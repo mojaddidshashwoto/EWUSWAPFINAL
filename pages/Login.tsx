@@ -59,7 +59,7 @@ export default function Login() {
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             Peer-to-Peer Skill Exchange Platform
           </div>
-          <Link href="/" className="inline-block mb-3 hover:opacity-90 transition-opacity"><Logo size="lg" tone="light" /></Link>
+<Link href="/" className="inline-block mb-3 hover:opacity-90 transition-opacity"><Logo size="lg" tone="light" /></Link>
           <p className="text-slate-400 text-xs sm:text-sm mt-1">
             Sign in to swap skills, learn from peers, and grow together.
           </p>
