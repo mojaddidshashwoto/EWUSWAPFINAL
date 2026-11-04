@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -76,9 +77,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    setLocation("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setLocation("/login");
+    } catch (error: any) {
+      toast.error(error?.message || "Could not sign out.");
+    }
   };
 
   // Dynamic user state from local storage / auth
@@ -92,16 +97,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   });
 
   const loadUserData = async () => {
-    const current = await getCurrentUser();
-    if (current) {
-      setUser({
-        displayName: current.displayName || current.name || "Aisha Rahman",
-        email: current.email || "aisha@ewu.edu.bd",
-        bdtBalance: current.bdtBalance ?? 2880,
-        avatarUrl: current.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=85",
-        isVerified: current.isVerified ?? true,
-        role: current.role || "student",
-      });
+    try {
+      const current = await getCurrentUser();
+      if (current) {
+        setUser({
+          displayName: current.displayName || current.name || "Aisha Rahman",
+          email: current.email || "aisha@ewu.edu.bd",
+          bdtBalance: current.bdtBalance ?? 2880,
+          avatarUrl: current.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=85",
+          isVerified: current.isVerified ?? true,
+          role: current.role || "student",
+        });
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Could not load your account details.");
     }
   };
 

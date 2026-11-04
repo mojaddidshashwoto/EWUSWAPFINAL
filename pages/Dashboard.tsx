@@ -164,8 +164,8 @@ export default function Dashboard() {
         displayName: currentUser?.displayName || currentUser?.name || authUser?.displayName || "Member",
         bdtBalance: balance,
       }));
-    } catch (err) {
-      console.error("Could not load user wallet data:", err);
+    } catch (error: any) {
+      toast.error(error?.message || "Could not load your wallet data.");
     }
   };
 
@@ -173,8 +173,8 @@ export default function Dashboard() {
     await loadUserData();
     try {
       const [transactions, courses] = await Promise.all([
-        listMyEscrowTransactions().catch(() => []),
-        listPublishedSkillCourses().catch(() => []),
+        listMyEscrowTransactions(),
+        listPublishedSkillCourses(),
       ]);
       const mappedTransactions = transactions.map((transaction) => {
         const counterparty = transaction.isPayer ? transaction.payee : transaction.payer;
@@ -222,7 +222,12 @@ export default function Dashboard() {
     const loadAndSubscribe = async () => {
       await loadDashboardData();
       const { data: { user: sbUser }, error } = await supabase.auth.getUser();
-      if (error || !sbUser || !isMounted) return;
+      if (!isMounted) return;
+      if (error) {
+        toast.error(error.message || "Could not subscribe to dashboard updates.");
+        return;
+      }
+      if (!sbUser) return;
 
       const refresh = () => { void loadUserData(); };
       channel = supabase

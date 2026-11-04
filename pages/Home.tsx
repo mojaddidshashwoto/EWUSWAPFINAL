@@ -131,7 +131,16 @@ export default function Home() {
   }), [allListings, category, discoveryMode, listingType, search]);
   const heldTotal = payments.filter((p) => p.status === "Held in escrow").reduce((sum, p) => sum + p.amount, 0);
 
-  const submitProfileName = async (nextName: string) => { setProfileName(nextName); try { await updateProfileName(nextName); } catch { /* anonymous preview fallback */ } notify("Profile updated", `Welcome, ${nextName}.`); setModal(null); };
+  const submitProfileName = async (nextName: string) => {
+    try {
+      await updateProfileName(nextName);
+      setProfileName(nextName);
+      notify("Profile updated", `Welcome, ${nextName}.`);
+      setModal(null);
+    } catch (error: any) {
+      toast.error(error?.message || "Could not update your profile name.");
+    }
+  };
   const saveProfile = async () => {
     const nextName = profileName.trim();
     const nextEmail = profileEmail.trim();
@@ -148,14 +157,24 @@ export default function Home() {
       setProfileAvatarUrl(avatarUrl);
       setProfileAvatarFile(null);
       notify("Profile saved", "Your public profile and visibility settings are up to date.");
-    } catch { notify("Profile saved locally", "Connect your account to sync avatar and email changes to Supabase."); }
-    setProfileSaving(false);
+    } catch (error: any) {
+      toast.error(error?.message || "Could not save your profile.");
+    } finally {
+      setProfileSaving(false);
+    }
   };
   const submitVerification = async () => {
     if (!verificationNumber.trim() || !verificationFile) { toast.error("Add the document number and choose a file before submitting."); return; }
-    setVerificationStatus("In review");
-    try { await submitVerificationRequest({ method: verificationMethod, documentNumber: verificationNumber, file: verificationFile }); } catch { /* preview fallback when auth/storage is unavailable */ }
-    setVerificationNumber(""); setVerificationFile(null); setModal(null); notify("Verification submitted", "Your document is encrypted and queued for a trust review.");
+    try {
+      await submitVerificationRequest({ method: verificationMethod, documentNumber: verificationNumber, file: verificationFile });
+      setVerificationStatus("In review");
+      setVerificationNumber("");
+      setVerificationFile(null);
+      setModal(null);
+      notify("Verification submitted", "Your document is encrypted and queued for a trust review.");
+    } catch (error: any) {
+      toast.error(error?.message || "Could not submit your verification request.");
+    }
   };
   const sendMessage = () => { if (!messageDraft.trim()) return; setChat((current) => [...current, { from: "me", body: messageDraft.trim(), time: "Now" }]); setMessageDraft(""); setTimeout(() => setChat((current) => [...current, { from: "them", body: "Got it — I’ll take a look and reply shortly.", time: "Now" }]), 450); };
   const startCall = async () => { setCallState("calling"); try { await updateCallStatus("ringing"); } catch { /* preview fallback */ } setTimeout(() => setCallState("active"), 700); };

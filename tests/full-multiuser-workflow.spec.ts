@@ -2,10 +2,14 @@ import { test, expect, type Page } from '@playwright/test';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
-dotenv.config({ path: '.env.local', quiet: true });
+dotenv.config({ path: ['.env.local', '.env'], quiet: true });
 
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://glpoowzygushtxwqmcxl.supabase.co';
-const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_MAXkviTqJHRkDOTjKnUTYw_mj0q8Mtp';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!SUPABASE_URL || !ANON_KEY) {
+  throw new Error('Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY) to run this test.');
+}
 
 async function createTestUser(name: string, label: string) {
   const client = createClient(SUPABASE_URL, ANON_KEY, {
@@ -110,6 +114,7 @@ test.describe('EwuSwap Full Multi-User Automation Suite', () => {
       await buyerPage.getByRole('button', { name: /Confirm & Authorize Escrow/i }).click();
       const escrowResponse = await escrowPromise;
       expect(escrowResponse.ok(), await escrowResponse.text()).toBeTruthy();
+      await expect(buyerPage).toHaveURL(/\/messages/, { timeout: 20000 });
 
       // -------------------------------------------------------------
       // TEST 5: User A and User B Communicate (In-App Chat)

@@ -91,16 +91,28 @@ export default function AdminDashboard() {
   const [resolutionNote, setResolutionNote] = useState("");
 
   const loadData = async () => {
-    const [vList, dList] = await Promise.all([listVerificationRequests(), listDisputes()]);
-    setVerifications(vList);
-    setDisputes(dList);
+    try {
+      const [vList, dList] = await Promise.all([listVerificationRequests(), listDisputes()]);
+      setVerifications(vList);
+      setDisputes(dList);
+    } catch (error: any) {
+      toast.error(error?.message || "Could not load admin data.");
+    }
   };
 
   useEffect(() => {
     loadData();
 
-    const handleVerifChanged = () => listVerificationRequests().then(setVerifications);
-    const handleDisputesChanged = () => listDisputes().then(setDisputes);
+    const handleVerifChanged = () => {
+      void listVerificationRequests().then(setVerifications).catch((error: any) => {
+        toast.error(error?.message || "Could not refresh verification requests.");
+      });
+    };
+    const handleDisputesChanged = () => {
+      void listDisputes().then(setDisputes).catch((error: any) => {
+        toast.error(error?.message || "Could not refresh disputes.");
+      });
+    };
 
     window.addEventListener("ss_verifications_changed", handleVerifChanged);
     window.addEventListener("ss_disputes_changed", handleDisputesChanged);

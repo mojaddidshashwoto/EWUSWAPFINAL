@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
 export type UserRole = "student" | "moderator" | "admin";
@@ -64,9 +65,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isMounted) {
           setUser(mapAuthUser(session?.user) ?? null);
         }
-      } catch {
+      } catch (error: any) {
         if (isMounted) {
           setUser(null);
+          toast.error(error?.message || "Could not verify your session.");
         }
       } finally {
         if (isMounted) {

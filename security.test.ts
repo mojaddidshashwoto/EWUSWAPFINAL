@@ -229,7 +229,7 @@ describe("Application Security & Input Sanitization Suite", () => {
 
     it("confirms only public project ref and anon credentials exist in client config", () => {
       expect(SUPABASE_CONFIG.projectUrl).toBeDefined();
-      expect(SUPABASE_CONFIG.projectRef).toBe("glpoowzygushtxwqmcxl");
+      expect(SUPABASE_CONFIG.projectRef).toBe(new URL(SUPABASE_CONFIG.projectUrl!).hostname.split(".")[0]);
       expect(SUPABASE_CONFIG.anonKey).toBeDefined();
       // Verify JWT payload of anon key is role: "anon"
       try {

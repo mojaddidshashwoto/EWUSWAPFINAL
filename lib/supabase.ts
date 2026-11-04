@@ -13,9 +13,16 @@ import {
   formatValidationError,
 } from "./validation";
 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY) to connect to Supabase.");
+}
+
 export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || "https://glpoowzygushtxwqmcxl.supabase.co",
-  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_MAXkviTqJHRkDOTjKnUTYw_mj0q8Mtp",
+  supabaseUrl,
+  supabaseKey,
   {
     auth: {
       persistSession: true,
@@ -841,9 +848,8 @@ export async function listDisputes(): Promise<PlatformDispute[]> {
       .from("ss_public_profiles")
       .select("id, display_name, avatar_url")
       .in("id", profileIds);
-    if (!profError && profiles) {
-      profiles.forEach((p: any) => profilesMap.set(p.id, p));
-    }
+    if (profError) throw profError;
+    profiles?.forEach((p: any) => profilesMap.set(p.id, p));
   }
 
   const defaultLearnerAvatar = "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=120&q=80";
@@ -1344,7 +1350,8 @@ export async function listMyConversations() {
   const { data: ownMemberships, error: ownMembershipsError } = await supabase
     .from("ss_conversation_members")
     .select("conversation_id")
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .order("joined_at", { ascending: false });
   if (ownMembershipsError) throw ownMembershipsError;
 
   const conversationIds = [...new Set((ownMemberships ?? []).map((row) => row.conversation_id))];

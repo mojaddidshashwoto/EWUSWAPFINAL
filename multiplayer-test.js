@@ -29,7 +29,11 @@ const clientB = createClient(SUPABASE_URL, ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
-async function getOrCreateUser(client, email, password, name) {
+const clientC = createClient(SUPABASE_URL, ANON_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false }
+});
+
+async function getOrCreateUser(client, email, password, name, passwordVariable) {
   const { data: listed, error: listError } = await clientAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
   if (listError) throw listError;
 
@@ -45,9 +49,6 @@ async function getOrCreateUser(client, email, password, name) {
     if (error) throw new Error(`Failed to create ${email}: ${error.message}`);
     user = data.user;
   } else if (!password) {
-    const passwordVariable = email.toLowerCase().startsWith("testa")
-      ? "MULTIPLAYER_TEST_A_PASSWORD"
-      : "MULTIPLAYER_TEST_B_PASSWORD";
     throw new Error(`${email} already exists; set ${passwordVariable}. Existing account passwords are never changed.`);
   }
 
@@ -59,13 +60,15 @@ async function getOrCreateUser(client, email, password, name) {
 async function runTest() {
   let hasErrors = false;
 
-  console.log("\n[1/3] Setting up test accounts (testA@example.com & testB@example.com)...");
+  console.log("\n[1/2] Setting up test accounts...");
   
-  const userA = await getOrCreateUser(clientA, "testA@example.com", process.env.MULTIPLAYER_TEST_A_PASSWORD, "Test User A");
-  const userB = await getOrCreateUser(clientB, "testB@example.com", process.env.MULTIPLAYER_TEST_B_PASSWORD, "Test User B");
+  const userA = await getOrCreateUser(clientA, "testA@example.com", process.env.MULTIPLAYER_TEST_A_PASSWORD, "Test User A", "MULTIPLAYER_TEST_A_PASSWORD");
+  const userB = await getOrCreateUser(clientB, "testB@example.com", process.env.MULTIPLAYER_TEST_B_PASSWORD, "Test User B", "MULTIPLAYER_TEST_B_PASSWORD");
+  const userC = await getOrCreateUser(clientC, "testC@example.com", process.env.MULTIPLAYER_TEST_C_PASSWORD, "Test User C", "MULTIPLAYER_TEST_C_PASSWORD");
 
   console.log(`✓ User A Authenticated: ${userA.id} (${userA.email})`);
   console.log(`✓ User B Authenticated: ${userB.id} (${userB.email})`);
+  console.log(`✓ Non-participant Authenticated: ${userC.id} (${userC.email})`);
 
   // Set initial 500 BDT balance on ss_profiles
   console.log("\nSetting initial ৳500 BDT balance on ss_profiles using service role...");
@@ -104,75 +107,45 @@ async function runTest() {
     hasErrors = true;
   }
 
-  // =========================================================================
-  // TEST MESSAGING
-  // =========================================================================
-  console.log("\n[2/3] Testing Messaging Flow (User A -> User B)...");
-  let convId = null;
-  
-  // Step 2a: Create or find direct conversation
-  const { data: rpcConvId, error: errConv } = await clientA.rpc("ss_create_conversation", {
-    p_target_id: userB.id
-  });
+  const { data: qaCategory, error: categoryError } = await clientAdmin
+    .from("ss_skill_categories")
+    .insert({
+      slug: `multiplayer-qa-${randomBytes(6).toString("hex")}`,
+      name: "Multiplayer QA",
+    })
+    .select("id")
+    .single();
+  if (categoryError) throw new Error(`Could not create the QA skill category: ${categoryError.message}`);
 
-  if (errConv) {
-    console.error("❌ ss_create_conversation RPC failed:", errConv.message);
-    hasErrors = true;
-  } else {
-    convId = rpcConvId;
-    console.log(`✓ Conversation established: ${convId}`);
-  }
-
-  // Step 2b: User A sends message into ss_messages
-  const msgBody = `Automated Test Message ${Date.now()}`;
-  if (convId) {
-    const { data: msgInsert, error: errInsert } = await clientA
-      .from("ss_messages")
-      .insert({
-        conversation_id: convId,
-        sender_id: userA.id,
-        body: msgBody
-      })
-      .select()
-      .single();
-
-    if (errInsert) {
-      console.error("❌ User A failed to INSERT into ss_messages:", errInsert.message, errInsert.details || "");
-      hasErrors = true;
-    } else {
-      console.log(`✓ User A successfully inserted message: ${msgInsert.id}`);
-    }
-
-    // Step 2c: User B selects message from ss_messages
-    const { data: msgSelect, error: errSelect } = await clientB
-      .from("ss_messages")
-      .select("*")
-      .eq("conversation_id", convId)
-      .eq("body", msgBody)
-      .maybeSingle();
-
-    if (errSelect) {
-      console.error("❌ User B failed to SELECT from ss_messages:", errSelect.message);
-      hasErrors = true;
-    } else if (!msgSelect) {
-      console.error("❌ User B could not find the message sent by User A (RLS or missing row).");
-      hasErrors = true;
-    } else {
-      console.log(`✓ User B successfully fetched User A's message: "${msgSelect.body}"`);
-    }
-  }
+  const { data: qaCourse, error: courseError } = await clientAdmin
+    .from("ss_courses")
+    .insert({
+      instructor_id: userB.id,
+      category_id: qaCategory.id,
+      title: `Multiplayer QA Skill ${Date.now()}`,
+      slug: `multiplayer-qa-${randomBytes(8).toString("hex")}`,
+      description: "Test course for the booking-to-chat multiplayer workflow.",
+      type: "service",
+      status: "published",
+      duration_minutes: 60,
+      credit_cost: 1,
+      price_bdt: 100,
+    })
+    .select("id")
+    .single();
+  if (courseError) throw new Error(`Could not create User B's QA skill: ${courseError.message}`);
 
   // =========================================================================
-  // TEST ESCROW & SPENDING (MONEY CONSERVATION ASSERTION)
+  // TEST BOOKING, MESSAGING & ESCROW (MONEY CONSERVATION ASSERTION)
   // =========================================================================
-  console.log("\n[3/3] Testing Escrow & Money Conservation Flow (User A books User B for ৳100 BDT)...");
+  console.log("\n[2/2] User A books User B, both message, and escrow settles...");
   
   const initialSystemMoney = 500 + 500; // User A (500) + User B (500)
   console.log(`Total Initial Money in System: ৳${initialSystemMoney} BDT`);
 
   const { data: escrowTxId, error: errEscrow } = await clientA.rpc("ss_create_escrow", {
     p_payee_id: userB.id,
-    p_course_id: null,
+    p_course_id: qaCourse.id,
     p_amount_bdt: 100,
     p_payer_note: "Multiplayer automated QA booking (Single BDT Currency)"
   });
@@ -182,6 +155,79 @@ async function runTest() {
     hasErrors = true;
   } else {
     console.log(`✓ Escrow created successfully. Transaction ID: ${escrowTxId}`);
+
+    const { data: escrowRow, error: errFetchEscrow } = await clientA
+      .from("ss_escrow_transactions")
+      .select("id, conversation_id, status, amount_bdt, gross_amount_bdt, platform_fee_bdt, net_amount_bdt")
+      .eq("id", escrowTxId)
+      .single();
+
+    if (errFetchEscrow || !escrowRow?.conversation_id) {
+      console.error("❌ Booking did not create a linked conversation:", errFetchEscrow?.message || "conversation_id is null");
+      hasErrors = true;
+    } else {
+      const convId = escrowRow.conversation_id;
+      console.log(`✓ Booking linked to conversation: ${convId}`);
+
+      const msgFromA = `User A booking message ${Date.now()}`;
+      const { data: insertedA, error: insertErrorA } = await clientA
+        .from("ss_messages")
+        .insert({ conversation_id: convId, sender_id: userA.id, body: msgFromA })
+        .select("id, body")
+        .single();
+
+      if (insertErrorA) {
+        console.error("❌ User A could not message User B:", insertErrorA.message);
+        hasErrors = true;
+      } else {
+        const { data: receivedByB, error: readErrorB } = await clientB
+          .from("ss_messages")
+          .select("id, body")
+          .eq("id", insertedA.id)
+          .maybeSingle();
+        if (readErrorB || !receivedByB) {
+          console.error("❌ User B could not read User A's message:", readErrorB?.message || "message hidden by RLS");
+          hasErrors = true;
+        } else {
+          console.log("✓ User B received User A's message.");
+        }
+      }
+
+      const msgFromB = `User B booking reply ${Date.now()}`;
+      const { data: insertedB, error: insertErrorB } = await clientB
+        .from("ss_messages")
+        .insert({ conversation_id: convId, sender_id: userB.id, body: msgFromB })
+        .select("id, body")
+        .single();
+
+      if (insertErrorB) {
+        console.error("❌ User B could not message User A:", insertErrorB.message);
+        hasErrors = true;
+      } else {
+        const { data: receivedByA, error: readErrorA } = await clientA
+          .from("ss_messages")
+          .select("id, body")
+          .eq("id", insertedB.id)
+          .maybeSingle();
+        if (readErrorA || !receivedByA) {
+          console.error("❌ User A could not read User B's message:", readErrorA?.message || "message hidden by RLS");
+          hasErrors = true;
+        } else {
+          console.log("✓ User A received User B's reply.");
+        }
+      }
+
+      const { data: outsiderRead, error: outsiderReadError } = await clientC
+        .from("ss_messages")
+        .select("id")
+        .eq("conversation_id", convId);
+      if (outsiderReadError || outsiderRead?.length) {
+        console.error("❌ Non-participant could read conversation messages:", outsiderReadError?.message || "rows were returned");
+        hasErrors = true;
+      } else {
+        console.log("✓ Non-participant cannot read the conversation.");
+      }
+    }
 
     // Verify User A's balance decreased from 500 to 400
     const { data: profileAEnd, error: errFetchAEnd } = await clientA
@@ -204,15 +250,8 @@ async function runTest() {
       }
     }
 
-    // Verify escrow row in ss_escrow_transactions
-    const { data: escrowRow, error: errFetchEscrow } = await clientA
-      .from("ss_escrow_transactions")
-      .select("*")
-      .eq("id", escrowTxId)
-      .single();
-
-    if (errFetchEscrow || !escrowRow) {
-      console.error("❌ Escrow transaction row not found in ss_escrow_transactions:", errFetchEscrow?.message);
+    if (!escrowRow) {
+      console.error("❌ Escrow transaction row not found in ss_escrow_transactions.");
       hasErrors = true;
     } else {
       const grossBdt = Number(escrowRow.gross_amount_bdt ?? escrowRow.amount_bdt);

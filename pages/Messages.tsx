@@ -45,7 +45,7 @@ interface Conversation {
 export default function MessagesPage() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConvId, setActiveConvId] = useState("");
+  const [activeConvId, setActiveConvId] = useState(() => new URLSearchParams(window.location.search).get("conversation") ?? "");
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");

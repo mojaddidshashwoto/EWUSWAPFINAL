@@ -50,15 +50,15 @@ export function EscrowCheckoutModal({
     if (!quote) return;
     setIsAuthorizing(true);
     try {
-      const escrow = await createPaidEscrow({
+      await createPaidEscrow({
         payeeId,
         courseId,
         amountBdt: quote.grossBdt,
       });
-      toast.success(`Escrow reserved for "${skillTitle}". Transaction ${escrow.id.slice(0, 8)}.`);
+      toast.success(`Escrow reserved for "${skillTitle}". You can now message ${providerName}.`);
       onConfirmSuccess?.();
       onClose();
-      setLocation("/exchanges");
+      setLocation("/messages");
     } catch (err: any) {
       toast.error(err?.message || "Failed to reserve escrow. Please check your BDT balance.");
     } finally {
