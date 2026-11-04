@@ -42,6 +42,15 @@ interface Conversation {
   messages: Message[];
 }
 
+function deduplicateConversations(conversations: Conversation[]) {
+  const conversationsByPeer = new Map<string, Conversation>();
+  for (const conversation of conversations) {
+    const key = conversation.peerId || conversation.id;
+    if (!conversationsByPeer.has(key)) conversationsByPeer.set(key, conversation);
+  }
+  return [...conversationsByPeer.values()];
+}
+
 export default function MessagesPage() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -64,8 +73,9 @@ export default function MessagesPage() {
     listMyConversations()
       .then((rows) => {
         if (!isActive) return;
-        setConversations(rows);
-        setActiveConvId((current) => rows.some((conversation) => conversation.id === current) ? current : rows[0]?.id ?? "");
+        const uniqueRows = deduplicateConversations(rows);
+        setConversations(uniqueRows);
+        setActiveConvId((current) => uniqueRows.some((conversation) => conversation.id === current) ? current : uniqueRows[0]?.id ?? "");
       })
       .catch((error: any) => {
         if (isActive) toast.error(error?.message || "Could not load conversations.");
@@ -102,7 +112,7 @@ export default function MessagesPage() {
           if (!rec) return;
 
           setConversations((prev) =>
-            prev.map((c) => {
+            deduplicateConversations(prev.map((c) => {
               if (c.id === (rec.conversation_id || activeConvId)) {
                 // Avoid duplicates
                 if (c.messages.some((m) => m.id === rec.id)) return c;
@@ -130,7 +140,7 @@ export default function MessagesPage() {
                 };
               }
               return c;
-            })
+            }))
           );
         }
       )
@@ -147,7 +157,7 @@ export default function MessagesPage() {
           if (!rec) return;
 
           setConversations((prev) =>
-            prev.map((c) => {
+            deduplicateConversations(prev.map((c) => {
               if (c.id === (rec.conversation_id || activeConvId)) {
                 if (c.messages.some((m) => m.id === rec.id)) return c;
 
@@ -170,7 +180,7 @@ export default function MessagesPage() {
                 };
               }
               return c;
-            })
+            }))
           );
         }
       )
@@ -185,14 +195,14 @@ export default function MessagesPage() {
         (payload) => {
           const rec = payload.new;
           if (!rec) return;
-          setConversations((prev) => prev.map((conversation) => conversation.id === rec.conversation_id
+          setConversations((prev) => deduplicateConversations(prev.map((conversation) => conversation.id === rec.conversation_id
             ? {
                 ...conversation,
                 messages: conversation.messages.map((message) => message.id === rec.id
                   ? { ...message, callStatus: rec.status }
                   : message),
               }
-            : conversation));
+            : conversation)));
         }
       )
       .subscribe((status) => {
@@ -214,7 +224,7 @@ export default function MessagesPage() {
     try {
       const row = await sendSupabaseRealtimeMessage({ conversationId: activeConv.id, text });
       setMessageInput("");
-      setConversations((current) => current.map((conversation) => {
+      setConversations((current) => deduplicateConversations(current.map((conversation) => {
         if (conversation.id !== activeConv.id || conversation.messages.some((message) => message.id === row.id)) return conversation;
         return {
           ...conversation,
@@ -226,7 +236,7 @@ export default function MessagesPage() {
             timestamp: new Date(row.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
           }],
         };
-      }));
+      })));
     } catch (error: any) {
       toast.error(error?.message || "Could not send this message.");
     }
@@ -249,9 +259,9 @@ export default function MessagesPage() {
     if (!activeConv) return;
     try {
       await updateSupabaseCallStatus(msgId, "ringing");
-      setConversations((prev) => prev.map((conversation) => conversation.id === activeConv.id
+      setConversations((prev) => deduplicateConversations(prev.map((conversation) => conversation.id === activeConv.id
         ? { ...conversation, messages: conversation.messages.map((message) => message.id === msgId ? { ...message, callStatus: "ringing" } : message) }
-        : conversation));
+        : conversation)));
       setActiveCall({ id: msgId, isCaller: false });
       setActiveCallPeer({ name: activeConv.peerName, avatar: activeConv.peerAvatar });
       setIsCallActive(true);
@@ -264,9 +274,9 @@ export default function MessagesPage() {
     if (!activeConv) return;
     try {
       await updateSupabaseCallStatus(msgId, "declined");
-      setConversations((prev) => prev.map((conversation) => conversation.id === activeConv.id
+      setConversations((prev) => deduplicateConversations(prev.map((conversation) => conversation.id === activeConv.id
         ? { ...conversation, messages: conversation.messages.map((message) => message.id === msgId ? { ...message, callStatus: "declined" } : message) }
-        : conversation));
+        : conversation)));
       toast.info("Call request declined.");
     } catch (error: any) {
       toast.error(error?.message || "Could not decline this call.");
