@@ -217,6 +217,19 @@ with migration_expectations(
       array[]::text[],
       array[]::text[],
       array[]::text[]
+    ),
+    (
+      '20261105030000_webrtc_call_signaling.sql',
+      array[]::text[],
+      array[
+        'public.ss_call_sessions.offer',
+        'public.ss_call_sessions.answer',
+        'public.ss_call_sessions.caller_ice_candidates',
+        'public.ss_call_sessions.callee_ice_candidates'
+      ]::text[],
+      array['public.ss_update_call_signaling(uuid, text, jsonb)']::text[],
+      array[]::text[],
+      array[]::text[]
     )
 ),
 missing_objects as (

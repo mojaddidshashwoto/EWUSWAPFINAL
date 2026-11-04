@@ -16,15 +16,59 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { supabase, getCurrentUser, listMyEscrowTransactions, listPublishedSkillCourses } from "@/lib/supabase";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 
-const LIVE_ACTIVITY_ITEMS = [
-  { id: "act-1", text: "Someone just earned ৳500 for a React bug fix", tag: "Earned", time: "2m ago" },
-  { id: "act-2", text: "Photography session swapped for UI Design by Leila Haddad", tag: "Swap", time: "5m ago" },
-  { id: "act-3", text: "Escrow funds released for weekend Bhai Bhai Biriyani!", tag: "Settled", time: "8m ago" },
-  { id: "act-4", text: "Sajib (CSE '24) reserved ৳1,200 for Machine Learning exam prep", tag: "Escrow", time: "11m ago" },
-  { id: "act-5", text: "Tanvir completed a Figma Design System swap with 5.0 rating", tag: "Review", time: "14m ago" },
-  { id: "act-6", text: "Priya reviewed Tableau Data Visualization session · ৳900 net settled", tag: "Verified", time: "19m ago" },
-  { id: "act-7", text: "Peer exchange requested: 'Conversational Bengali for Python'", tag: "Request", time: "24m ago" },
-];
+type SocialPostActivity = {
+  id: string;
+  text: string;
+  tag: string;
+  createdAt: string;
+};
+
+type SocialPostRow = {
+  id?: unknown;
+  body?: unknown;
+  category?: unknown;
+  created_at?: unknown;
+  visibility?: unknown;
+  deleted_at?: unknown;
+};
+
+const toPublicActivity = (row: SocialPostRow): SocialPostActivity | null => {
+  if (
+    typeof row.id !== "string" ||
+    typeof row.body !== "string" ||
+    typeof row.created_at !== "string" ||
+    row.visibility !== "everyone" ||
+    row.deleted_at != null
+  ) {
+    return null;
+  }
+
+  const body = row.body.trim();
+  if (!body) return null;
+
+  return {
+    id: row.id,
+    text: `New community post: ${body}`,
+    tag: typeof row.category === "string" && row.category.trim() ? row.category : "Community",
+    createdAt: row.created_at,
+  };
+};
+
+const formatActivityTime = (createdAt: string) => {
+  const createdAtMs = new Date(createdAt).getTime();
+  if (Number.isNaN(createdAtMs)) return "recently";
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - createdAtMs) / 60_000));
+  if (elapsedMinutes < 1) return "just now";
+  if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`;
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `${elapsedHours}h ago`;
+  return `${Math.floor(elapsedHours / 24)}d ago`;
+};
+
+const mergeActivity = (current: SocialPostActivity[], incoming: SocialPostActivity[]) =>
+  [...new Map([...incoming, ...current].map((item) => [item.id, item])).values()]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 7);
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -141,17 +185,65 @@ export default function Dashboard() {
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [userBdt, setUserBdt] = useState(0);
   const [user, setUser] = useState({ displayName: "", bdtBalance: 0 });
+  const [activityItems, setActivityItems] = useState<SocialPostActivity[]>([]);
+  const [isActivityRealtimeConnected, setIsActivityRealtimeConnected] = useState(false);
   const [escrowHistory, setEscrowHistory] = useState<Array<{ id: string; title: string; counterpartyName: string; counterpartyAvatar: string; date: string; time: string; format: string; amountBdt: number; status: string }>>([]);
   const [activeEscrows, setActiveEscrows] = useState<Array<{ id: string; title: string; counterpartyName: string; counterpartyAvatar: string; date: string; time: string; format: string; amountBdt: number; status: string }>>([]);
   const [recommendedSkills, setRecommendedSkills] = useState<SkillCardProps[]>([]);
   const [tickerIndex, setTickerIndex] = useState(0);
 
   useEffect(() => {
+    let isMounted = true;
+    const channel = supabase
+      .channel("dashboard-public-social-activity")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "ss_social_posts" }, (payload) => {
+        const activity = toPublicActivity(payload.new as SocialPostRow);
+        if (activity && isMounted) {
+          setActivityItems((current) => mergeActivity(current, [activity]));
+        }
+      })
+      .subscribe((status) => {
+        if (isMounted) setIsActivityRealtimeConnected(status === "SUBSCRIBED");
+        if (isMounted && (status === "CHANNEL_ERROR" || status === "TIMED_OUT")) {
+          toast.error("Live community activity updates are unavailable.");
+        }
+      });
+
+    const loadRecentActivity = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("ss_social_posts")
+          .select("id, body, category, created_at, visibility, deleted_at")
+          .eq("visibility", "everyone")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(7);
+        if (error) throw error;
+        if (!isMounted) return;
+
+        const recentActivity = (data ?? [])
+          .map((row) => toPublicActivity(row as SocialPostRow))
+          .filter((item): item is SocialPostActivity => item !== null);
+        setActivityItems((current) => mergeActivity(current, recentActivity));
+      } catch (error: any) {
+        if (isMounted) toast.error(error?.message || "Could not load recent community activity.");
+      }
+    };
+
+    void loadRecentActivity();
+    return () => {
+      isMounted = false;
+      void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activityItems.length === 0) return;
     const interval = setInterval(() => {
-      setTickerIndex((prev) => (prev + 1) % LIVE_ACTIVITY_ITEMS.length);
+      setTickerIndex((prev) => (prev + 1) % activityItems.length);
     }, 3800);
     return () => clearInterval(interval);
-  }, []);
+  }, [activityItems.length]);
 
   // Fetch user profile and actual BDT balance from database exactly like Wallet.tsx
   const loadUserData = async () => {
@@ -256,6 +348,8 @@ export default function Dashboard() {
     setLocation(`/skills/${skillId}`);
   };
 
+  const currentActivity = activityItems[tickerIndex] ?? activityItems[0];
+
   return (
     <DashboardLayout>
       <motion.div
@@ -312,25 +406,35 @@ export default function Dashboard() {
               <div className="pt-1">
                 <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 text-white shadow-xl w-fit">
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-[9px] font-black uppercase tracking-widest text-emerald-300">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                    Live
+                    {isActivityRealtimeConnected && (
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                      </span>
+                    )}
+                    {isActivityRealtimeConnected ? "Live" : activityItems.length > 0 ? "Recent" : "No activity"}
                   </div>
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={tickerIndex}
-                      initial={{ opacity: 0, y: 7 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -7 }}
-                      transition={{ duration: 0.25 }}
-                      className="text-[11px] font-medium text-zinc-200 truncate max-w-[260px] sm:max-w-md flex items-center gap-2"
-                    >
-                      <span>{LIVE_ACTIVITY_ITEMS[tickerIndex].text}</span>
-                      <span className="text-[10px] text-zinc-500 shrink-0 hidden sm:inline">· {LIVE_ACTIVITY_ITEMS[tickerIndex].time}</span>
-                    </motion.div>
-                  </AnimatePresence>
+                  {activityItems.length > 0 ? (
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={currentActivity?.id}
+                        initial={{ opacity: 0, y: 7 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -7 }}
+                        transition={{ duration: 0.25 }}
+                        className="text-[11px] font-medium text-zinc-200 truncate max-w-[260px] sm:max-w-md flex items-center gap-2"
+                      >
+                        <span className="truncate">{currentActivity?.text}</span>
+                        {currentActivity && (
+                          <span className="text-[10px] text-zinc-500 shrink-0 hidden sm:inline">
+                            · {formatActivityTime(currentActivity.createdAt)}
+                          </span>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+                  ) : (
+                    <span className="text-[11px] font-medium text-zinc-400">No recent public posts yet.</span>
+                  )}
                 </div>
               </div>
             </div>

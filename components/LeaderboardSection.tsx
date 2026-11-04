@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { listTopServiceProviders, supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import { Link } from "wouter";
 
 export interface ProviderLeaderboardItem {
   providerId: string;
@@ -119,49 +120,52 @@ export function LeaderboardSection() {
         ) : sortedLeaderboard.length === 0 ? (
           <p className="py-6 text-center text-xs text-zinc-500">No provider rankings are available yet.</p>
         ) : sortedLeaderboard.map((item) => (
-          <div
+          <Link
             key={item.providerId}
-            className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-white/15 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            href={`/profile/${item.providerId}`}
+            className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
           >
-            <div className="flex items-center gap-3">
-              <div className="w-8 text-center shrink-0">
-                {getRankBadge(item.rank)}
-              </div>
-              <img
-                src={item.avatarUrl}
-                alt={item.displayName}
-                className="w-10 h-10 rounded-full object-cover border border-white/15"
-              />
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-white">{item.displayName}</h4>
-                  {item.isVerified && <ShieldCheck className="w-4 h-4 text-indigo-400 shrink-0" />}
-                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-bold uppercase tracking-wider border border-emerald-500/25">
-                    {item.availabilityStatus}
-                  </span>
+            <div className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-white/15 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 text-center shrink-0">
+                  {getRankBadge(item.rank)}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-zinc-400 mt-0.5">
-                  <span className="flex items-center gap-1 text-amber-400 font-semibold">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    {item.averageRating.toFixed(2)} ({item.reviewCount} reviews)
-                  </span>
-                  <span>•</span>
-                  <span className="text-zinc-400">{item.completedServicesCount} exchanges completed</span>
+                <img
+                  src={item.avatarUrl}
+                  alt={item.displayName}
+                  className="w-10 h-10 rounded-full object-cover border border-white/15"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-white">{item.displayName}</h4>
+                    {item.isVerified && <ShieldCheck className="w-4 h-4 text-indigo-400 shrink-0" />}
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-bold uppercase tracking-wider border border-emerald-500/25">
+                      {item.availabilityStatus}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-zinc-400 mt-0.5">
+                    <span className="flex items-center gap-1 text-amber-400 font-semibold">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      {item.averageRating.toFixed(2)} ({item.reviewCount} reviews)
+                    </span>
+                    <span>•</span>
+                    <span className="text-zinc-400">{item.completedServicesCount} exchanges completed</span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Sentiment Score Indicator */}
-            <div className="flex items-center gap-2 sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-white/5">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1 text-xs font-black text-emerald-400">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <span>{item.sentimentScore}% Positive</span>
+              {/* Sentiment Score Indicator */}
+              <div className="flex items-center gap-2 sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-white/5">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1 text-xs font-black text-emerald-400">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <span>{item.sentimentScore}% Positive</span>
+                  </div>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Review Sentiment Score</p>
                 </div>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Review Sentiment Score</p>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </CardContent>
     </Card>

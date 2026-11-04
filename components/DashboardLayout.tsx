@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Logo } from "@/components/ui/Logo";
 import {
   DropdownMenu,
@@ -35,7 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { getCurrentUser, type UserRole } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
@@ -48,6 +49,15 @@ interface NavigationItem {
   icon: LucideIcon;
   badge?: string;
   isAdmin?: boolean;
+}
+
+interface SidebarProfile {
+  id: string;
+  displayName: string;
+  avatarUrl: string | null;
+  role: string;
+  bdtBalance: number;
+  isVerified: boolean;
 }
 
 const BASE_NAV_ITEMS: NavigationItem[] = [
@@ -73,9 +83,11 @@ const MOBILE_CORE_ITEMS = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [location, setLocation] = useLocation();
-  const { logout } = useAuth();
+  const { user: authUser, isLoading: isAuthLoading, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [user, setUser] = useState<SidebarProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   const handleLogout = async () => {
     try {
@@ -86,46 +98,56 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   };
 
-  // Dynamic user state from local storage / auth
-  const [user, setUser] = useState({
-    displayName: "Guest User",
-    email: "",
-    bdtBalance: 0,
-    avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80",
-    isVerified: false,
-    role: "student" as UserRole,
-  });
-
-  const loadUserData = async () => {
-    try {
-      const current = await getCurrentUser();
-      if (current) {
-        setUser({
-          displayName: current.displayName || current.name || "Aisha Rahman",
-          email: current.email || "aisha@ewu.edu.bd",
-          bdtBalance: current.bdtBalance ?? 2880,
-          avatarUrl: current.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=85",
-          isVerified: current.isVerified ?? true,
-          role: current.role || "student",
-        });
-      }
-    } catch (error: any) {
-      toast.error(error?.message || "Could not load your account details.");
-    }
-  };
-
   useEffect(() => {
-    loadUserData();
-    const handleUpdate = () => loadUserData();
+    let isActive = true;
+    if (isAuthLoading) return;
+    if (!authUser?.id) {
+      setUser(null);
+      setIsProfileLoading(false);
+      return;
+    }
+
+    const loadUserProfile = async () => {
+      setIsProfileLoading(true);
+      try {
+        const { data: profile, error } = await supabase
+          .from("ss_profiles")
+          .select("id, display_name, avatar_url, role, bdt_balance, is_verified")
+          .eq("id", authUser.id)
+          .maybeSingle();
+        if (error) throw error;
+        if (!profile) throw new Error("Your account profile could not be found.");
+        if (!isActive) return;
+
+        setUser({
+          id: profile.id,
+          displayName: profile.display_name,
+          avatarUrl: profile.avatar_url,
+          role: profile.role,
+          bdtBalance: Number(profile.bdt_balance),
+          isVerified: profile.is_verified,
+        });
+      } catch (error: any) {
+        if (!isActive) return;
+        setUser(null);
+        toast.error(error?.message || "Could not load your account profile.");
+      } finally {
+        if (isActive) setIsProfileLoading(false);
+      }
+    };
+
+    void loadUserProfile();
+    const handleUpdate = () => { void loadUserProfile(); };
     window.addEventListener("ss_user_changed", handleUpdate);
     window.addEventListener("ss_wallet_updated", handleUpdate);
     return () => {
+      isActive = false;
       window.removeEventListener("ss_user_changed", handleUpdate);
       window.removeEventListener("ss_wallet_updated", handleUpdate);
     };
-  }, []);
+  }, [authUser?.id, isAuthLoading]);
 
-  const isAdminOrMod = user.role === "admin" || user.role === "moderator";
+  const isAdminOrMod = user?.role === "admin" || user?.role === "moderator";
 
   // Build nav items dynamically: include Admin Panel when role is admin or moderator
   const navItems: NavigationItem[] = [
@@ -136,7 +158,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             label: "Admin Panel",
             path: "/admin",
             icon: ShieldAlert,
-            badge: user.role === "admin" ? "ADMIN" : "MOD",
+            badge: user?.role === "admin" ? "ADMIN" : "MOD",
             isAdmin: true,
           },
         ]
@@ -244,26 +266,44 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Sidebar Footer User Card with Role Badge */}
         <div className="p-3 border-t border-white/10 bg-white/[0.015]">
           <div className="flex items-center justify-between p-2 rounded-xl bg-white/[0.03] border border-white/10 shadow-xs hover:border-white/20 transition-colors">
-            <Link href="/profile" className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity">
-              <img
-                src={user.avatarUrl}
-                alt={user.displayName}
-                className="w-9 h-9 rounded-full object-cover border border-indigo-500/30 shrink-0"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold text-white truncate flex items-center gap-1">
-                  {user.displayName}
-                  {isAdminOrMod ? (
-                    <Badge className="bg-rose-500 text-[8px] px-1 py-0 h-3.5 uppercase font-black">
-                      {user.role}
-                    </Badge>
-                  ) : (
-                    user.isVerified && <Badge className="bg-indigo-500 text-[9px] px-1 py-0 h-3.5">✓</Badge>
-                  )}
-                </p>
-                <p className="text-[10px] text-zinc-500 truncate">{user.email}</p>
+            {isProfileLoading ? (
+              <div className="flex items-center gap-2.5 min-w-0 flex-1" aria-label="Loading profile">
+                <Skeleton className="w-9 h-9 rounded-full shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-2 w-16" />
+                </div>
               </div>
-            </Link>
+            ) : user ? (
+              <Link href="/profile" className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.displayName}
+                    className="w-9 h-9 rounded-full object-cover border border-indigo-500/30 shrink-0"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full border border-indigo-500/30 shrink-0 bg-indigo-500/15 text-indigo-200 flex items-center justify-center text-xs font-bold">
+                    {user.displayName.slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-white truncate flex items-center gap-1">
+                    {user.displayName}
+                    {isAdminOrMod ? (
+                      <Badge className="bg-rose-500 text-[8px] px-1 py-0 h-3.5 uppercase font-black">
+                        {user.role}
+                      </Badge>
+                    ) : (
+                      user.isVerified && <Badge className="bg-indigo-500 text-[9px] px-1 py-0 h-3.5">✓</Badge>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-zinc-500 truncate">{user.role}</p>
+                </div>
+              </Link>
+            ) : (
+              <p className="min-w-0 flex-1 text-xs text-zinc-400">Profile unavailable</p>
+            )}
             <button
               onClick={handleLogout}
               title="Logout"
@@ -358,7 +398,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             >
               <div className="flex items-center gap-1.5 text-emerald-400 px-2 py-0.5">
                 <Wallet className="w-3.5 h-3.5" />
-                <span className="font-extrabold tracking-tight">৳ {user.bdtBalance.toLocaleString()}</span>
+                {isProfileLoading ? (
+                  <Skeleton className="h-3 w-14" aria-label="Loading balance" />
+                ) : (
+                  <span className="font-extrabold tracking-tight">
+                    {user ? `৳ ${user.bdtBalance.toLocaleString()}` : "৳ —"}
+                  </span>
+                )}
                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest hidden lg:inline">BDT</span>
               </div>
             </Link>
@@ -373,16 +419,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Link>
 
             {/* User Profile Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 p-0.5 rounded-full hover:ring-2 hover:ring-indigo-500/40 transition-all outline-none cursor-pointer">
-                  <img
-                    src={user.avatarUrl}
-                    alt={user.displayName}
-                    className="w-8 h-8 rounded-full object-cover border border-white/15"
-                  />
-                </button>
-              </DropdownMenuTrigger>
+            {isProfileLoading ? (
+              <Skeleton className="w-8 h-8 rounded-full" aria-label="Loading profile" />
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 p-0.5 rounded-full hover:ring-2 hover:ring-indigo-500/40 transition-all outline-none cursor-pointer">
+                    {user.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.displayName}
+                        className="w-8 h-8 rounded-full object-cover border border-white/15"
+                      />
+                    ) : (
+                      <span className="w-8 h-8 rounded-full border border-white/15 bg-indigo-500/15 text-indigo-200 flex items-center justify-center text-xs font-bold">
+                        {user.displayName.slice(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-[#0e0f14]/95 backdrop-blur-3xl border-white/10 text-white">
                 <DropdownMenuLabel className="font-semibold text-xs">
                   <div className="flex items-center justify-between">
@@ -391,7 +446,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       {user.role}
                     </Badge>
                   </div>
-                  <div className="text-[10px] font-normal text-zinc-400 truncate">{user.email}</div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-white/10" />
 
@@ -431,7 +485,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   Log Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            ) : null}
           </div>
         </header>
 

@@ -28,7 +28,7 @@ interface Message {
   text?: string;
   timestamp: string;
   isCallRequest?: boolean;
-  callStatus?: "requested" | "accepted" | "declined" | "ended";
+  callStatus?: "requested" | "ringing" | "active" | "declined" | "ended" | "missed";
 }
 
 interface Conversation {
@@ -54,6 +54,7 @@ export default function MessagesPage() {
   // Call Modal State
   const [isCallActive, setIsCallActive] = useState(false);
   const [activeCallPeer, setActiveCallPeer] = useState<{ name: string; avatar: string }>({ name: "", avatar: "" });
+  const [activeCall, setActiveCall] = useState<{ id: string; isCaller: boolean } | null>(null);
 
   const activeConv = conversations.find((c) => c.id === activeConvId);
 
@@ -172,6 +173,27 @@ export default function MessagesPage() {
           );
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "ss_call_sessions",
+          filter: `conversation_id=eq.${activeConvId}`,
+        },
+        (payload) => {
+          const rec = payload.new;
+          if (!rec) return;
+          setConversations((prev) => prev.map((conversation) => conversation.id === rec.conversation_id
+            ? {
+                ...conversation,
+                messages: conversation.messages.map((message) => message.id === rec.id
+                  ? { ...message, callStatus: rec.status }
+                  : message),
+              }
+            : conversation));
+        }
+      )
       .subscribe((status) => {
         setRealtimeStatus(status);
       });
@@ -212,7 +234,10 @@ export default function MessagesPage() {
   const handleRequestCall = async () => {
     if (!activeConv) return;
     try {
-      await proposeSupabaseRealtimeCall({ conversationId: activeConv.id, calleeId: activeConv.peerId });
+      const call = await proposeSupabaseRealtimeCall({ conversationId: activeConv.id, calleeId: activeConv.peerId });
+      setActiveCall({ id: call.id, isCaller: true });
+      setActiveCallPeer({ name: activeConv.peerName, avatar: activeConv.peerAvatar });
+      setIsCallActive(true);
       toast.success(`Call request sent to ${activeConv.peerName}.`);
     } catch (error: any) {
       toast.error(error?.message || "Could not send this call request.");
@@ -222,10 +247,11 @@ export default function MessagesPage() {
   const handleAcceptCall = async (msgId: string) => {
     if (!activeConv) return;
     try {
-      await updateSupabaseCallStatus(msgId, "active");
+      await updateSupabaseCallStatus(msgId, "ringing");
       setConversations((prev) => prev.map((conversation) => conversation.id === activeConv.id
-        ? { ...conversation, messages: conversation.messages.map((message) => message.id === msgId ? { ...message, callStatus: "accepted" } : message) }
+        ? { ...conversation, messages: conversation.messages.map((message) => message.id === msgId ? { ...message, callStatus: "ringing" } : message) }
         : conversation));
+      setActiveCall({ id: msgId, isCaller: false });
       setActiveCallPeer({ name: activeConv.peerName, avatar: activeConv.peerAvatar });
       setIsCallActive(true);
     } catch (error: any) {
@@ -443,12 +469,17 @@ export default function MessagesPage() {
       </div>
 
       {/* ACTIVE CALL OVERLAY MODAL */}
-      <CallSessionModal
-        isOpen={isCallActive}
-        onClose={() => setIsCallActive(false)}
-        peerName={activeCallPeer.name}
-        peerAvatar={activeCallPeer.avatar}
-      />
+      {activeCall && user?.id && (
+        <CallSessionModal
+          isOpen={isCallActive}
+          callSessionId={activeCall.id}
+          currentUserId={user.id}
+          isCaller={activeCall.isCaller}
+          onClose={() => setIsCallActive(false)}
+          peerName={activeCallPeer.name}
+          peerAvatar={activeCallPeer.avatar}
+        />
+      )}
     </DashboardLayout>
   );
 }

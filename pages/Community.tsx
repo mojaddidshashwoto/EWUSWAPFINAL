@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { createCommunityPost, createConversation, listCommunityPosts, toggleCommunityPostLike, type CommunityPost as Post } from "@/lib/supabase";
+import { createCommunityPost, createConversation, listCommunityPosts, supabase, toggleCommunityPostLike, type CommunityPost as Post } from "@/lib/supabase";
 
 export default function CommunityPage() {
   const { user } = useAuth();
@@ -35,6 +35,27 @@ export default function CommunityPage() {
 
   useEffect(() => {
     loadPosts();
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+    const refreshPosts = () => {
+      if (isActive) void loadPosts();
+    };
+    const channel = supabase
+      .channel("community-feed")
+      .on("postgres_changes", { event: "*", schema: "public", table: "ss_social_posts" }, refreshPosts)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ss_post_likes" }, refreshPosts)
+      .subscribe((status) => {
+        if (isActive && (status === "CHANNEL_ERROR" || status === "TIMED_OUT")) {
+          toast.error("Live community feed updates are unavailable.");
+        }
+      });
+
+    return () => {
+      isActive = false;
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleCreatePost = async () => {

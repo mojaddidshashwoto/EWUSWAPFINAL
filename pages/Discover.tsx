@@ -16,7 +16,7 @@ import {
   Clock, CheckCircle2, ShieldCheck, Globe
 } from "lucide-react";
 import { toast } from "sonner";
-import { createSkillSwapListing, listPublishedSkillCourses } from "@/lib/supabase";
+import { createSkillSwapListing, listPublishedSkillCourses, supabase } from "@/lib/supabase";
 
 const SAMPLE_LISTINGS: (SkillCardProps & {
   format: "Online" | "Offline" | "Both";
@@ -160,8 +160,9 @@ export default function Discover() {
 
   useEffect(() => {
     let isActive = true;
-    listPublishedSkillCourses()
-      .then((courses) => {
+    const refreshListings = async () => {
+      try {
+        const courses = await listPublishedSkillCourses();
         if (!isActive) return;
         setPublishedListings(courses.map((course) => ({
           id: course.id,
@@ -183,15 +184,31 @@ export default function Discover() {
           authorId: course.instructorId,
           deliveryMode: course.deliveryMode ?? "online",
         })));
-      })
-      .catch((error) => {
+      } catch (error: any) {
         if (isActive) toast.error(error?.message || "Could not load marketplace listings.");
-      })
-      .finally(() => {
+      } finally {
         if (isActive) setIsLoadingListings(false);
+      }
+    };
+
+    void refreshListings();
+    const channel = supabase
+      .channel("discover-published-courses")
+      .on("postgres_changes", { event: "*", schema: "public", table: "ss_courses" }, () => {
+        void refreshListings();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "ss_course_reviews" }, () => {
+        void refreshListings();
+      })
+      .subscribe((status) => {
+        if (isActive && (status === "CHANNEL_ERROR" || status === "TIMED_OUT")) {
+          toast.error("Live marketplace updates are unavailable.");
+        }
       });
+
     return () => {
       isActive = false;
+      void supabase.removeChannel(channel);
     };
   }, []);
 
@@ -518,7 +535,12 @@ export default function Discover() {
             {filteredListings.length > 0 ? (
               <div className="stagger-children grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5">
                 {filteredListings.map((skill) => (
-                  <SkillCard key={skill.id} {...skill} onBook={handleBook} />
+                  <SkillCard
+                    key={skill.id}
+                    {...skill}
+                    detailsHref={`/exchanges/${skill.id}`}
+                    onBook={handleBook}
+                  />
                 ))}
               </div>
             ) : (

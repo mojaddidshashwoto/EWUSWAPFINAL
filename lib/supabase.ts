@@ -1481,10 +1481,24 @@ export async function proposeSupabaseRealtimeCall(input: {
   return data;
 }
 
-export async function updateSupabaseCallStatus(callId: string, status: "active" | "declined" | "ended") {
+export async function updateSupabaseCallStatus(callId: string, status: "ringing" | "active" | "declined" | "ended") {
   const { data, error } = await supabase.rpc("ss_update_call_status", {
     p_call_id: callId,
     p_status: status,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateSupabaseCallSignaling(
+  callId: string,
+  signalType: "offer" | "answer" | "ice",
+  payload: RTCSessionDescriptionInit | RTCIceCandidateInit,
+) {
+  const { data, error } = await supabase.rpc("ss_update_call_signaling", {
+    p_call_id: callId,
+    p_signal_type: signalType,
+    p_payload: payload,
   });
   if (error) throw error;
   return data;

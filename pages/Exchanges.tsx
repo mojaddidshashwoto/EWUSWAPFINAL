@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { LeaveReviewModal } from "@/components/LeaveReviewModal";
-import { listMyEscrowTransactions, openEscrowDispute, releaseEscrowByPayer, submitEscrowProof, updateEscrowMeetingDetails } from "@/lib/supabase";
+import { listMyEscrowTransactions, openEscrowDispute, releaseEscrowByPayer, submitEscrowProof, supabase, updateEscrowMeetingDetails } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ExchangeItem {
   id: string;
@@ -115,6 +116,7 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
 
 export default function ExchangesPage() {
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
   const [exchanges, setExchanges] = useState<ExchangeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
@@ -125,9 +127,10 @@ export default function ExchangesPage() {
   const [isSavingMeeting, setIsSavingMeeting] = useState<Record<string, boolean>>({});
   const [editingMeetingIds, setEditingMeetingIds] = useState<Record<string, boolean>>({});
 
-  const loadExchanges = async () => {
+  const loadExchanges = async (isActive = true) => {
     try {
       const rows = await listMyEscrowTransactions();
+      if (!isActive) return;
       setExchanges(rows.map((row) => {
         const grossBdt = Number(row.gross_amount_bdt ?? (row.gross_amount_credits ? row.gross_amount_credits * 120 : (row.amount_bdt ?? row.amount_credits * 120)));
         const netBdt = Number(row.net_amount_bdt ?? (row.net_amount_credits ? row.net_amount_credits * 120 : grossBdt * 0.95));
@@ -155,20 +158,53 @@ export default function ExchangesPage() {
         };
       }));
     } catch (error: any) {
-      toast.error(error?.message || "Could not load exchange data.");
+      if (isActive) toast.error(error?.message || "Could not load exchange data.");
     } finally {
-      setIsLoading(false);
+      if (isActive) setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadExchanges();
-    const handleUpdate = () => { void loadExchanges(); };
+    let isActive = true;
+    void loadExchanges(isActive);
+    const handleUpdate = () => { void loadExchanges(isActive); };
     window.addEventListener("ss_exchanges_updated", handleUpdate);
+
+    if (!user?.id) {
+      return () => {
+        isActive = false;
+        window.removeEventListener("ss_exchanges_updated", handleUpdate);
+      };
+    }
+
+    const refreshExchanges = () => { void loadExchanges(isActive); };
+    const channel = supabase
+      .channel(`exchanges:${user.id}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "ss_escrow_transactions",
+        filter: `payer_id=eq.${user.id}`,
+      }, refreshExchanges)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "ss_escrow_transactions",
+        filter: `payee_id=eq.${user.id}`,
+      }, refreshExchanges)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ss_disputes" }, refreshExchanges)
+      .subscribe((status) => {
+        if (isActive && (status === "CHANNEL_ERROR" || status === "TIMED_OUT")) {
+          toast.error("Live exchange updates are unavailable.");
+        }
+      });
+
     return () => {
+      isActive = false;
       window.removeEventListener("ss_exchanges_updated", handleUpdate);
+      void supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user?.id]);
 
   const handleSaveMeetingDetails = async (exchangeId: string) => {
     const val = (meetingInputs[exchangeId] ?? "").trim();
