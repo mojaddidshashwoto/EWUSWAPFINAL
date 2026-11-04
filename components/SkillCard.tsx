@@ -1,5 +1,5 @@
 import { Star, Clock, Coins, Wallet, ShieldCheck, ArrowUpRight, Settings, MapPin, Video } from "lucide-react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, MagneticButton } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -124,8 +124,8 @@ export function SkillCard({
       )}
 
       {/* Footer Price & Booking CTA */}
-      <CardFooter className="mt-auto px-4 py-3 bg-white/[0.015] border-t border-white/10 flex items-center justify-between">
-        <div className="space-y-0.5">
+      <div className="mt-auto pt-4 flex flex-row justify-between items-center gap-4 w-full">
+        <div className="flex flex-col items-start">
           <div className="flex items-center gap-1 text-emerald-400 font-black text-sm tracking-tight">
             <Wallet className="w-4 h-4 text-emerald-400" />
             <span>৳ {bdtCost.toLocaleString()} BDT</span>
@@ -153,7 +153,7 @@ export function SkillCard({
             <ArrowUpRight className="w-3.5 h-3.5" />
           </MagneticButton>
         )}
-      </CardFooter>
+      </div>
     </Card>
   );
 }
