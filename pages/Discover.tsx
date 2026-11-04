@@ -569,7 +569,7 @@ export default function Discover() {
       </div>
 
       <Dialog open={isPublishOpen} onOpenChange={setIsPublishOpen}>
-        <DialogContent className="bg-white dark:bg-slate-900">
+        <DialogContent className="max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900">
           <DialogHeader>
             <DialogTitle>Publish a Service</DialogTitle>
             <DialogDescription>Your listing will appear in Discover after it is saved to your account.</DialogDescription>
@@ -581,7 +581,7 @@ export default function Discover() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="service-description">Description</Label>
-              <Textarea id="service-description" value={serviceDescription} onChange={(event) => setServiceDescription(event.target.value)} maxLength={2000} minLength={20} required />
+              <Textarea id="service-description" value={serviceDescription} onChange={(event) => setServiceDescription(event.target.value)} maxLength={2000} minLength={20} rows={6} required />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="service-learning-outcomes">What You'll Learn</Label>
