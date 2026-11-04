@@ -52,7 +52,7 @@ export function SkillCard({
   const isOwner = isOwnerProp ?? Boolean(authorId && user?.id && authorId === user.id);
   const isOnCampus = deliveryMode === "on_campus" || deliveryMode === "On-Campus" || deliveryMode === "Offline";
   const details = (
-    <>
+    <div className="flex flex-1 flex-col">
       {/* Header Badges */}
       <div className="p-4 pb-2 flex items-center justify-between gap-1.5 flex-wrap">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -76,7 +76,7 @@ export function SkillCard({
         </Badge>
       </div>
 
-      <CardContent className="px-4 py-2 space-y-3">
+      <CardContent className="flex-1 px-4 py-2 space-y-3">
         <div className="flex items-center gap-2.5">
           <img
             src={providerAvatar}
@@ -110,21 +110,21 @@ export function SkillCard({
           <span>{duration} session</span>
         </div>
       </CardContent>
-    </>
+    </div>
   );
 
   return (
-    <Card className="group w-[300px] shrink-0 overflow-hidden border-white/10 bg-white/[0.025] backdrop-blur-3xl shadow-xl transition-all duration-300 hover:-translate-y-2 hover:border-white/25 hover:shadow-[0_25px_50px_-10px_rgba(99,102,241,0.35),0_0_25px_rgba(16,185,129,0.2)] sm:w-[320px] relative will-change-transform">
+    <Card className="group flex h-full w-[300px] shrink-0 flex-col overflow-hidden border-white/10 bg-white/[0.025] backdrop-blur-3xl shadow-xl transition-all duration-300 hover:-translate-y-2 hover:border-white/25 hover:shadow-[0_25px_50px_-10px_rgba(99,102,241,0.35),0_0_25px_rgba(16,185,129,0.2)] sm:w-[320px] relative will-change-transform">
       {detailsHref ? (
-        <Link href={detailsHref} className="block transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
+        <Link href={detailsHref} className="flex flex-1 flex-col transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
           {details}
         </Link>
       ) : (
-        <div>{details}</div>
+        <div className="flex flex-1 flex-col">{details}</div>
       )}
 
       {/* Footer Price & Booking CTA */}
-      <CardFooter className="px-4 py-3 bg-white/[0.015] border-t border-white/10 flex items-center justify-between">
+      <CardFooter className="mt-auto px-4 py-3 bg-white/[0.015] border-t border-white/10 flex items-center justify-between">
         <div className="space-y-0.5">
           <div className="flex items-center gap-1 text-emerald-400 font-black text-sm tracking-tight">
             <Wallet className="w-4 h-4 text-emerald-400" />
