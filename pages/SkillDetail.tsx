@@ -115,7 +115,7 @@ export default function SkillDetail() {
           reviewsCount: course.reviewCount,
           description: course.description,
           format: "Session format coordinated with the provider",
-          learningOutcomes: [],
+          learningOutcomes: course.learningOutcomes,
           prerequisites: "Coordinate prerequisites with the provider before the session.",
           reviews: [],
           teacher: {
@@ -229,12 +229,12 @@ export default function SkillDetail() {
                 <CardTitle className="text-base font-bold text-slate-900 dark:text-white">What You'll Learn</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {skill.learningOutcomes.map((outcome, idx) => (
+                {skill.learningOutcomes.length > 0 ? skill.learningOutcomes.map((outcome, idx) => (
                   <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-300">
                     <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
                     <span>{outcome}</span>
                   </div>
-                ))}
+                )) : <p className="text-xs text-slate-500 dark:text-slate-400">No learning outcomes specified by the provider.</p>}
               </CardContent>
             </Card>
 

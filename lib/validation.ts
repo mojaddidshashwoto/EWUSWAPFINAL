@@ -151,6 +151,9 @@ export const ServiceListingInputSchema = z.object({
   availability: z.string().optional().default("available"),
   availableSkills: z.array(z.string().transform((s) => sanitizeText(s, 50))).optional().default([]),
   learningGoals: z.array(z.string().transform((g) => sanitizeText(g, 50))).optional().default([]),
+  learningOutcomes: z.array(
+    z.string().trim().min(1).max(300).transform((outcome) => sanitizeText(outcome, 300))
+  ).max(20, "You can add up to 20 learning outcomes.").optional().default([]),
 });
 
 /**

@@ -43,6 +43,7 @@ export type SkillSwapListingInput = {
   learningGoals: string[];
   durationMinutes: number;
   availability: string;
+  learningOutcomes?: string[];
   priceBdt?: number | null;
   priceCredits?: number | null;
   deliveryMode?: "on_campus" | "online" | string;
@@ -99,6 +100,7 @@ export type PublishedSkillCourse = {
   trustScore: number;
   reviewCount: number;
   averageRating: number;
+  learningOutcomes: string[];
   deliveryMode?: "on_campus" | "online" | string;
 };
 
@@ -472,7 +474,7 @@ export async function uploadProfileAvatar(file: File | Blob | string) {
 export async function listPublishedSkillCourses(): Promise<PublishedSkillCourse[]> {
   const { data: courses, error } = await supabase
     .from("ss_courses")
-    .select("id, title, description, type, duration_minutes, price_bdt, instructor_id, category_id, delivery_mode")
+    .select("id, title, description, type, duration_minutes, price_bdt, instructor_id, category_id, delivery_mode, learning_outcomes")
     .eq("status", "published")
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -522,6 +524,7 @@ export async function listPublishedSkillCourses(): Promise<PublishedSkillCourse[
       trustScore: Number(instructor?.trust_score ?? 0),
       reviewCount: ratings.length,
       averageRating: ratings.length ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length : 0,
+      learningOutcomes: course.learning_outcomes ?? [],
       deliveryMode: course.delivery_mode ?? "online",
     };
   });
@@ -632,8 +635,9 @@ export async function createSkillSwapListing(input: SkillSwapListingInput) {
       credit_cost: legacyCreditCost,
       price_bdt: validated.priceBdt,
       delivery_mode: validated.deliveryMode ?? "online",
+      learning_outcomes: validated.learningOutcomes,
     })
-    .select("id, title, description, type, duration_minutes, credit_cost, price_bdt, delivery_mode, created_at")
+    .select("id, title, description, type, duration_minutes, credit_cost, price_bdt, delivery_mode, learning_outcomes, created_at")
     .single();
   if (error) throw error;
   return data;

@@ -144,6 +144,7 @@ export default function Discover() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [serviceTitle, setServiceTitle] = useState("");
   const [serviceDescription, setServiceDescription] = useState("");
+  const [serviceLearningOutcomes, setServiceLearningOutcomes] = useState("");
   const [serviceCategory, setServiceCategory] = useState("Design");
   const [serviceDeliveryMode, setServiceDeliveryMode] = useState<"on_campus" | "online">("online");
   const [servicePriceBdt, setServicePriceBdt] = useState("500");
@@ -269,6 +270,7 @@ export default function Discover() {
         exchangeType: "paid",
         availableSkills: [],
         learningGoals: [],
+        learningOutcomes: serviceLearningOutcomes.split(/\r?\n/).map((outcome) => outcome.trim()).filter(Boolean),
         durationMinutes,
         availability: "available",
         priceBdt,
@@ -278,6 +280,7 @@ export default function Discover() {
       setIsPublishOpen(false);
       setServiceTitle("");
       setServiceDescription("");
+      setServiceLearningOutcomes("");
       setServiceDeliveryMode("online");
       toast.success("Your service is published.");
     } catch (error: any) {
@@ -579,6 +582,18 @@ export default function Discover() {
             <div className="space-y-1.5">
               <Label htmlFor="service-description">Description</Label>
               <Textarea id="service-description" value={serviceDescription} onChange={(event) => setServiceDescription(event.target.value)} maxLength={2000} minLength={20} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="service-learning-outcomes">What You'll Learn</Label>
+              <Textarea
+                id="service-learning-outcomes"
+                value={serviceLearningOutcomes}
+                onChange={(event) => setServiceLearningOutcomes(event.target.value)}
+                placeholder={"Add one learning outcome per line, for example:\nBuild a reusable component\nPractice responsive layouts"}
+                maxLength={6000}
+                rows={4}
+              />
+              <p className="text-xs text-slate-500">Enter up to 20 outcomes, one per line.</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="service-delivery-mode">Delivery Mode</Label>

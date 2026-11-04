@@ -230,6 +230,14 @@ with migration_expectations(
       array['public.ss_update_call_signaling(uuid, text, jsonb)']::text[],
       array[]::text[],
       array[]::text[]
+    ),
+    (
+      '20261105040000_service_learning_outcomes.sql',
+      array[]::text[],
+      array['public.ss_courses.learning_outcomes']::text[],
+      array[]::text[],
+      array[]::text[],
+      array[]::text[]
     )
 ),
 missing_objects as (
