@@ -9,7 +9,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import {
-  Send, Phone, Video, Search, ShieldCheck, CheckCheck, Clock, PhoneCall,
+  Send, Phone, Video, Search, ShieldCheck, CheckCheck, Clock, PhoneCall, ArrowLeft,
   Check, X, Sparkles, MoreVertical, AlertCircle, Ban, Radio, Bot
 } from "lucide-react";
 import { toast } from "sonner";
@@ -46,6 +46,7 @@ export default function MessagesPage() {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState(() => new URLSearchParams(window.location.search).get("conversation") ?? "");
+  const [showChatMobile, setShowChatMobile] = useState(false);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -286,7 +287,7 @@ export default function MessagesPage() {
     <DashboardLayout>
       <div className="h-[82vh] max-w-6xl mx-auto flex flex-col md:flex-row bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
         {/* LEFT COLUMN: CONVERSATIONS LIST */}
-        <aside className="w-full md:w-80 border-r border-slate-200/80 dark:border-slate-800 flex flex-col shrink-0">
+        <aside className={`${showChatMobile ? "hidden md:flex" : "flex"} w-full md:w-80 border-r border-slate-200/80 dark:border-slate-800 flex-col shrink-0`}>
           <div className="p-4 border-b border-slate-100 dark:border-slate-800 space-y-3">
             <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center justify-between">
               Messages
@@ -312,7 +313,10 @@ export default function MessagesPage() {
               return (
                 <div
                   key={conv.id}
-                  onClick={() => setActiveConvId(conv.id)}
+                  onClick={() => {
+                    setActiveConvId(conv.id);
+                    setShowChatMobile(true);
+                  }}
                   className={`p-3.5 flex items-center gap-3 cursor-pointer transition-all ${
                     active ? "bg-indigo-50/60 dark:bg-slate-800/60 border-l-4 border-indigo-600" : "hover:bg-slate-50 dark:hover:bg-slate-800/30"
                   }`}
@@ -338,10 +342,19 @@ export default function MessagesPage() {
         </aside>
 
         {/* RIGHT COLUMN: ACTIVE CHAT TIMELINE */}
-        <div className="flex-1 flex flex-col min-w-0 bg-slate-50/40 dark:bg-slate-950/40">
+        <div className={`${showChatMobile ? "flex" : "hidden md:flex"} flex-1 flex-col min-w-0 bg-slate-50/40 dark:bg-slate-950/40`}>
           {/* Active Chat Header */}
           <div className="p-3.5 px-6 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <Button
+                onClick={() => setShowChatMobile(false)}
+                variant="ghost"
+                size="icon"
+                className="md:hidden h-8 w-8 -ml-2 text-slate-500"
+                aria-label="Back to conversations"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
               <img src={activeConv.peerAvatar} alt={activeConv.peerName} className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
               <div>
                 <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1">
