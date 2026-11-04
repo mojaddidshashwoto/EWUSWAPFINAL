@@ -270,7 +270,7 @@ export default function Discover() {
         exchangeType: "paid",
         availableSkills: [],
         learningGoals: [],
-        learningOutcomes: serviceLearningOutcomes.split(/\r?\n/).map((outcome) => outcome.trim()).filter(Boolean),
+        learningOutcomes: serviceLearningOutcomes.split("\n").filter((line) => line.trim() !== "").map((line) => line.trim()),
         durationMinutes,
         availability: "available",
         priceBdt,
@@ -590,10 +590,10 @@ export default function Discover() {
                 value={serviceLearningOutcomes}
                 onChange={(event) => setServiceLearningOutcomes(event.target.value)}
                 placeholder={"Add one learning outcome per line, for example:\nBuild a reusable component\nPractice responsive layouts"}
-                maxLength={6000}
+                maxLength={15000}
                 rows={4}
               />
-              <p className="text-xs text-slate-500">Enter up to 20 outcomes, one per line.</p>
+              <p className="text-xs text-slate-500">Enter up to 50 outcomes, one per line.</p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="service-delivery-mode">Delivery Mode</Label>

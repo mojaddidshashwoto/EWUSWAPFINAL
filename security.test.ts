@@ -139,6 +139,27 @@ describe("Application Security & Input Sanitization Suite", () => {
       expect(shortDuration.success).toBe(false);
     });
 
+    it("allows up to 50 learning outcomes and rejects additional outcomes", () => {
+      const baseInput = {
+        title: "React & TypeScript Tutoring",
+        description: "Comprehensive 1-on-1 tutoring covering React hooks and components.",
+        category: "Software Development",
+        exchangeType: "paid" as const,
+        durationMinutes: 60,
+        priceBdt: 500,
+      };
+
+      expect(ServiceListingInputSchema.safeParse({
+        ...baseInput,
+        learningOutcomes: Array.from({ length: 50 }, (_, index) => `Outcome ${index + 1}`),
+      }).success).toBe(true);
+
+      expect(ServiceListingInputSchema.safeParse({
+        ...baseInput,
+        learningOutcomes: Array.from({ length: 51 }, (_, index) => `Outcome ${index + 1}`),
+      }).success).toBe(false);
+    });
+
     it("validates Meeting Link Hand-off input", () => {
       const valid = MeetingDetailsInputSchema.safeParse({
         transactionId: "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
