@@ -471,12 +471,14 @@ export async function uploadProfileAvatar(file: File | Blob | string) {
   return { url: publicUrl, avatar_url: publicUrl };
 }
 
-export async function listPublishedSkillCourses(): Promise<PublishedSkillCourse[]> {
-  const { data: courses, error } = await supabase
+export async function listPublishedSkillCourses(instructorId?: string): Promise<PublishedSkillCourse[]> {
+  let coursesQuery = supabase
     .from("ss_courses")
     .select("id, title, description, type, duration_minutes, price_bdt, instructor_id, category_id, delivery_mode, learning_outcomes")
-    .eq("status", "published")
-    .order("created_at", { ascending: false });
+    .eq("status", "published");
+  if (instructorId) coursesQuery = coursesQuery.eq("instructor_id", instructorId);
+
+  const { data: courses, error } = await coursesQuery.order("created_at", { ascending: false });
   if (error) throw error;
   if (!courses?.length) return [];
 
@@ -1381,6 +1383,24 @@ export async function createConversation(participantId: string) {
   });
   if (error) throw error;
   return { id: data as string, participantId, createdAt: new Date().toISOString() };
+}
+
+export async function createFreeSkillSwapProposal(input: {
+  courseId: string;
+  offeredSkill: string;
+  note?: string;
+}) {
+  const { data, error } = await supabase.rpc("ss_create_free_skill_swap_proposal", {
+    p_course_id: input.courseId,
+    p_offered_skill: input.offeredSkill,
+    p_note: input.note?.trim() || null,
+    p_amount_bdt: 0,
+  });
+  if (error) throw error;
+  if (typeof data !== "string" || !isValidUUID(data)) {
+    throw new Error("The proposal was created without a valid conversation.");
+  }
+  return { conversationId: data };
 }
 
 export async function listMyConversations() {

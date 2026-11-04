@@ -13,7 +13,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { EscrowCheckoutModal } from "@/components/EscrowCheckoutModal";
-import { listPublishedSkillCourses } from "@/lib/supabase";
+import { createFreeSkillSwapProposal, listPublishedSkillCourses } from "@/lib/supabase";
 
 const SAMPLE_SKILL_DATA = {
   id: "l1",
@@ -76,6 +76,7 @@ export default function SkillDetail() {
   const [isListingNotFound, setIsListingNotFound] = useState(false);
   const [offeredSkill, setOfferedSkill] = useState("React & TypeScript Development");
   const [swapNote, setSwapNote] = useState("");
+  const [isSubmittingSwap, setIsSubmittingSwap] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
 
   const courseId = location.split("/")[2];
@@ -147,9 +148,42 @@ export default function SkillDetail() {
     };
   }, [courseId]);
 
-  const handleRequestSwap = () => {
-    toast.success("Skill Swap request sent to " + skill.teacher.name + "!");
-    setSwapModalOpen(false);
+  const handleRequestSwap = async () => {
+    const cleanOfferedSkill = offeredSkill.trim();
+    const cleanNote = swapNote.trim();
+
+    if (!user?.id) {
+      toast.error("Please sign in to propose a skill swap.");
+      return;
+    }
+    if (!isLiveListing) {
+      toast.error("This preview listing cannot receive swap proposals.");
+      return;
+    }
+    if (!cleanOfferedSkill || cleanOfferedSkill.length > 120) {
+      toast.error("Enter a skill to offer (up to 120 characters).");
+      return;
+    }
+    if (cleanNote.length > 1500) {
+      toast.error("Your message note cannot exceed 1500 characters.");
+      return;
+    }
+
+    setIsSubmittingSwap(true);
+    try {
+      await createFreeSkillSwapProposal({
+        courseId: skill.id,
+        offeredSkill: cleanOfferedSkill,
+        note: cleanNote,
+      });
+      toast.success(`Skill swap proposal sent to ${skill.teacher.name}.`);
+      setSwapModalOpen(false);
+      setLocation("/messages");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send your skill swap proposal.");
+    } finally {
+      setIsSubmittingSwap(false);
+    }
   };
 
   if (isLoadingSkill) {
@@ -372,7 +406,12 @@ export default function SkillDetail() {
       </div>
 
       {/* MODAL 1: REQUEST FREE SWAP */}
-      <Dialog open={swapModalOpen} onOpenChange={setSwapModalOpen}>
+      <Dialog
+        open={swapModalOpen}
+        onOpenChange={(open) => {
+          if (!isSubmittingSwap) setSwapModalOpen(open);
+        }}
+      >
         <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-white">
@@ -389,6 +428,7 @@ export default function SkillDetail() {
               <input
                 value={offeredSkill}
                 onChange={(e) => setOfferedSkill(e.target.value)}
+                maxLength={120}
                 className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
               />
             </div>
@@ -398,13 +438,19 @@ export default function SkillDetail() {
                 placeholder="Explain what project or goal you'd like to work on together..."
                 value={swapNote}
                 onChange={(e) => setSwapNote(e.target.value)}
+                maxLength={1500}
+                rows={4}
                 className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleRequestSwap} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-xl">
-              Send Swap Proposal
+            <Button
+              onClick={handleRequestSwap}
+              disabled={isSubmittingSwap || !isLiveListing}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-xl"
+            >
+              {isSubmittingSwap ? "Sending Proposal..." : "Send Swap Proposal"}
             </Button>
           </DialogFooter>
         </DialogContent>

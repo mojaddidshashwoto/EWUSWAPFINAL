@@ -118,7 +118,7 @@ function Router() {
       <Route path="/groups" component={() => <ProtectedRoute component={GroupLearning} />} />
       <Route path="/notifications" component={() => <ProtectedRoute component={Notifications} />} />
       <Route path="/profile" component={() => <ProtectedRoute component={UserProfile} />} />
-      <Route path="/profile/:username" component={() => <ProtectedRoute component={UserProfile} />} />
+      <Route path="/profile/:id" component={() => <ProtectedRoute component={UserProfile} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={SettingsPrivacy} />} />
       <Route path="/settings/privacy" component={() => <ProtectedRoute component={SettingsPrivacy} />} />
       <Route path="/onboarding" component={() => <ProtectedRoute component={Onboarding} />} />

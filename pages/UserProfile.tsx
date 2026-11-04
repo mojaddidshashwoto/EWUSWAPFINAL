@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { createConversation, followProfile, getProfileDetails, getProfileFollowStats, listProfileReviews, supabase, unfollowProfile, updateProfileDetails, uploadProfileAvatar } from "@/lib/supabase";
+import { createConversation, followProfile, getProfileDetails, getProfileFollowStats, listProfileReviews, listPublishedSkillCourses, supabase, unfollowProfile, updateProfileDetails, uploadProfileAvatar, type PublishedSkillCourse } from "@/lib/supabase";
 import DashboardLayout from "@/components/DashboardLayout";
+import { SkillCard } from "@/components/SkillCard";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,6 +75,7 @@ const AVAILABILITY_BADGES = {
 
 export default function UserProfile() {
   const [location, setLocation] = useLocation();
+  const params = useParams<{ id?: string }>();
   const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
   const [profile, setProfile] = useState(SAMPLE_PROFILE);
@@ -81,6 +83,8 @@ export default function UserProfile() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isUpdatingFollow, setIsUpdatingFollow] = useState(false);
   const [isProfileNotFound, setIsProfileNotFound] = useState(false);
+  const [providerCourses, setProviderCourses] = useState<PublishedSkillCourse[]>([]);
+  const [isLoadingProviderCourses, setIsLoadingProviderCourses] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [editName, setEditName] = useState("");
@@ -90,12 +94,12 @@ export default function UserProfile() {
   const [editLearningSkills, setEditLearningSkills] = useState("");
   const [editCertifications, setEditCertifications] = useState("");
   const [editAvatarFile, setEditAvatarFile] = useState<File | null>(null);
-  const requestedProfileId = location.split("/")[2];
+  const requestedProfileId = params.id;
   const isOwnProfile = !requestedProfileId || requestedProfileId === user?.id;
 
   useEffect(() => {
     let isActive = true;
-    const requestedId = location.split("/")[2];
+    const requestedId = params.id;
     const isUuid = requestedId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestedId);
     const profileId = requestedId ? (isUuid ? requestedId : undefined) : user?.id;
     setIsLoadingProfile(true);
@@ -169,7 +173,35 @@ export default function UserProfile() {
     return () => {
       isActive = false;
     };
-  }, [location, user?.id]);
+  }, [location, params.id, user?.id]);
+
+  useEffect(() => {
+    let isActive = true;
+    setProviderCourses([]);
+    setIsLoadingProviderCourses(true);
+
+    if (!profile.id || profile.id.startsWith("usr-")) {
+      setIsLoadingProviderCourses(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    listPublishedSkillCourses(profile.id)
+      .then((courses) => {
+        if (isActive) setProviderCourses(courses);
+      })
+      .catch((error) => {
+        if (isActive) toast.error(error instanceof Error ? error.message : "Could not load provider services.");
+      })
+      .finally(() => {
+        if (isActive) setIsLoadingProviderCourses(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [profile.id]);
 
   useEffect(() => {
     const profileId = profile.id;
@@ -470,8 +502,42 @@ export default function UserProfile() {
                   About
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  {profile.bio}
+                  {profile.bio || "This member has not added a bio yet."}
                 </p>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Services by this Provider</h3>
+                {isLoadingProviderCourses ? (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Loading provider services...</p>
+                ) : providerCourses.length === 0 ? (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">This provider has no published services yet.</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {providerCourses.map((course) => (
+                      <SkillCard
+                        key={course.id}
+                        id={course.id}
+                        title={course.title}
+                        providerName={course.instructorName}
+                        providerAvatar={course.instructorAvatar}
+                        isVerified={course.isVerified}
+                        category={course.category}
+                        type={course.type === "service" ? "Service" : "Course"}
+                        bdtCost={course.priceBdt}
+                        duration={`${course.durationMinutes} min`}
+                        rating={course.averageRating}
+                        reviewsCount={course.reviewCount}
+                        description={course.description}
+                        authorId={course.instructorId}
+                        deliveryMode={course.deliveryMode}
+                        detailsHref={`/skills/${course.id}`}
+                        onBook={() => setLocation(`/skills/${course.id}`)}
+                        className="w-full min-w-0"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Education */}

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, MagneticButton } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
+import { cn } from "@/lib/utils";
 
 export interface SkillCardProps {
   id: string;
@@ -25,6 +26,7 @@ export interface SkillCardProps {
   onBook?: (id: string) => void;
   onManage?: (id: string) => void;
   detailsHref?: string;
+  className?: string;
 }
 
 export function SkillCard({
@@ -47,6 +49,7 @@ export function SkillCard({
   onBook,
   onManage,
   detailsHref,
+  className,
 }: SkillCardProps) {
   const { user } = useAuth();
   const isOwner = isOwnerProp ?? Boolean(authorId && user?.id && authorId === user.id);
@@ -114,7 +117,7 @@ export function SkillCard({
   );
 
   return (
-    <Card className="group flex h-full w-[300px] shrink-0 flex-col overflow-hidden border-white/10 bg-white/[0.025] backdrop-blur-3xl shadow-xl transition-all duration-300 hover:-translate-y-2 hover:border-white/25 hover:shadow-[0_25px_50px_-10px_rgba(99,102,241,0.35),0_0_25px_rgba(16,185,129,0.2)] sm:w-[320px] relative will-change-transform">
+    <Card className={cn("group flex h-full w-[300px] shrink-0 flex-col overflow-hidden border-white/10 bg-white/[0.025] backdrop-blur-3xl shadow-xl transition-all duration-300 hover:-translate-y-2 hover:border-white/25 hover:shadow-[0_25px_50px_-10px_rgba(99,102,241,0.35),0_0_25px_rgba(16,185,129,0.2)] sm:w-[320px] relative will-change-transform", className)}>
       {detailsHref ? (
         <Link href={detailsHref} className="flex flex-1 flex-col transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
           {details}

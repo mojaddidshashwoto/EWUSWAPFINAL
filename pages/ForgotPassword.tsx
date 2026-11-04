@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,29 +7,75 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, CheckCircle2, Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/ui/Logo";
+import { supabase } from "@/lib/supabase";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(
+    () => new URLSearchParams(window.location.hash.slice(1)).get("type") === "recovery",
+  );
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isPasswordUpdated, setIsPasswordUpdated] = useState(false);
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setIsRecovery(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
       toast.error("Please enter your registered email address");
       return;
     }
 
     setIsLoading(true);
     try {
-      // Simulate reset email request
-      setTimeout(() => {
-        setIsSubmitted(true);
-        toast.success("Password reset instructions sent!");
-        setIsLoading(false);
-      }, 600);
-    } catch (err) {
-      toast.error("Something went wrong. Please try again.");
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: `${window.location.origin}/forgot-password`,
+      });
+      if (error) throw error;
+
+      setEmail(normalizedEmail);
+      setIsSubmitted(true);
+      toast.success("If an account exists for that email, password reset instructions are on the way.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not request a password reset.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+
+      setIsPasswordUpdated(true);
+      toast.success("Your password has been updated.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update your password.");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -51,7 +97,64 @@ export default function ForgotPassword() {
         </div>
 
         <Card className="border-slate-800 bg-slate-900/90 backdrop-blur-md shadow-2xl text-slate-100">
-          {!isSubmitted ? (
+          {isRecovery ? (
+            isPasswordUpdated ? (
+              <CardContent className="py-8 text-center space-y-4">
+                <div className="w-12 h-12 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold text-white">Password updated</h3>
+                  <p className="text-xs text-slate-400">Your password has been changed successfully.</p>
+                </div>
+                <Link href="/dashboard" className="inline-flex items-center justify-center text-sm text-indigo-300 hover:text-indigo-200">
+                  Continue to EwuSwap
+                </Link>
+              </CardContent>
+            ) : (
+              <>
+                <CardHeader className="space-y-1 pb-4">
+                  <CardTitle className="text-xl font-bold text-white">Choose a new password</CardTitle>
+                  <CardDescription className="text-slate-400 text-xs">
+                    Enter and confirm your new account password.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="new-password" className="text-slate-300 text-xs font-medium">New password</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        autoComplete="new-password"
+                        minLength={6}
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        className="bg-slate-950/60 border-slate-800 text-slate-100 focus-visible:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="confirm-password" className="text-slate-300 text-xs font-medium">Confirm new password</Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        autoComplete="new-password"
+                        minLength={6}
+                        value={confirmPassword}
+                        onChange={(event) => setConfirmPassword(event.target.value)}
+                        className="bg-slate-950/60 border-slate-800 text-slate-100 focus-visible:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <Button type="submit" disabled={isLoading} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold">
+                      {isLoading ? "Updating password..." : "Update Password"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </>
+            )
+          ) : !isSubmitted ? (
             <>
               <CardHeader className="space-y-1 pb-4">
                 <CardTitle className="text-xl font-bold text-white">Reset your password</CardTitle>
