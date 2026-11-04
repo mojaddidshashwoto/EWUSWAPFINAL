@@ -498,7 +498,12 @@ export default function Dashboard() {
             {recommendedSkills.length === 0 ? (
               <p className="py-8 text-xs text-zinc-500">No published services are available yet.</p>
             ) : recommendedSkills.map((skill) => (
-              <SkillCard key={skill.id} {...skill} onBook={handleBookSkill} />
+              <SkillCard
+                key={skill.id}
+                {...skill}
+                detailsHref={`/exchanges/${skill.id}`}
+                onBook={handleBookSkill}
+              />
             ))}
           </div>
         </motion.div>

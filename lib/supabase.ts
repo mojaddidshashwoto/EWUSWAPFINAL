@@ -291,6 +291,43 @@ export async function listProfileReviews(profileId: string): Promise<ProfileRevi
   });
 }
 
+export async function getProfileFollowStats(profileId: string, viewerId?: string) {
+  const [{ count, error: countError }, { data: follow, error: followError }] = await Promise.all([
+    supabase
+      .from("ss_follows")
+      .select("follower_id", { count: "exact", head: true })
+      .eq("following_id", profileId),
+    viewerId && viewerId !== profileId
+      ? supabase
+          .from("ss_follows")
+          .select("following_id")
+          .eq("follower_id", viewerId)
+          .eq("following_id", profileId)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
+  if (countError) throw countError;
+  if (followError) throw followError;
+
+  return { followerCount: count ?? 0, isFollowing: Boolean(follow) };
+}
+
+export async function followProfile(profileId: string, viewerId: string) {
+  const { error } = await supabase
+    .from("ss_follows")
+    .insert({ follower_id: viewerId, following_id: profileId });
+  if (error) throw error;
+}
+
+export async function unfollowProfile(profileId: string, viewerId: string) {
+  const { error } = await supabase
+    .from("ss_follows")
+    .delete()
+    .eq("follower_id", viewerId)
+    .eq("following_id", profileId);
+  if (error) throw error;
+}
+
 export async function submitReview(courseId: string, rating: number, comment: string, headline?: string) {
   const parsed = CourseReviewInputSchema.safeParse({ courseId, rating, comment, headline });
   if (!parsed.success) {

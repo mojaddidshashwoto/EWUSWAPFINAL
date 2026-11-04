@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/contexts/AuthContext";
-import { createConversation, getProfileDetails, listProfileReviews, updateProfileDetails, uploadProfileAvatar } from "@/lib/supabase";
+import { createConversation, followProfile, getProfileDetails, getProfileFollowStats, listProfileReviews, supabase, unfollowProfile, updateProfileDetails, uploadProfileAvatar } from "@/lib/supabase";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -77,7 +77,9 @@ export default function UserProfile() {
   const { user } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
   const [profile, setProfile] = useState(SAMPLE_PROFILE);
+  const [followerCount, setFollowerCount] = useState(0);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isUpdatingFollow, setIsUpdatingFollow] = useState(false);
   const [isProfileNotFound, setIsProfileNotFound] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -129,6 +131,15 @@ export default function UserProfile() {
           setIsProfileNotFound(true);
           return;
         }
+        void getProfileFollowStats(profileId, user?.id)
+          .then((followStats) => {
+            if (!isActive) return;
+            setFollowerCount(followStats.followerCount);
+            setIsFollowing(followStats.isFollowing);
+          })
+          .catch((error) => {
+            if (isActive) toast.error(error?.message || "Could not load follower count.");
+          });
         const skills = typeof row.skills === "string" ? row.skills.split(",").map((item: string) => item.trim()).filter(Boolean) : [];
         setProfile((current) => ({
           ...current,
@@ -161,6 +172,44 @@ export default function UserProfile() {
   }, [location, user?.id]);
 
   useEffect(() => {
+    const profileId = profile.id;
+    if (!profileId || profileId.startsWith("usr-")) return;
+
+    let isActive = true;
+    const refreshFollowerCount = async () => {
+      try {
+        const stats = await getProfileFollowStats(profileId, user?.id);
+        if (isActive) {
+          setFollowerCount(stats.followerCount);
+          setIsFollowing(stats.isFollowing);
+        }
+      } catch (error: any) {
+        if (isActive) toast.error(error?.message || "Could not refresh follower count.");
+      }
+    };
+
+    const channel = supabase
+      .channel(`profile-followers:${profileId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ss_follows" }, (payload) => {
+        const oldFollowingId = (payload.old as { following_id?: string } | null)?.following_id;
+        const newFollowingId = (payload.new as { following_id?: string } | null)?.following_id;
+        if (oldFollowingId === profileId || newFollowingId === profileId) {
+          void refreshFollowerCount();
+        }
+      })
+      .subscribe((status) => {
+        if (isActive && (status === "CHANNEL_ERROR" || status === "TIMED_OUT")) {
+          toast.error("Live follower updates are unavailable.");
+        }
+      });
+
+    return () => {
+      isActive = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [profile.id, user?.id]);
+
+  useEffect(() => {
     setEditName(profile.name);
     setEditBio(profile.bio);
     setEditEducation(profile.education === "Not added yet" ? "" : profile.education);
@@ -171,9 +220,30 @@ export default function UserProfile() {
 
   const statusInfo = AVAILABILITY_BADGES[profile.availabilityStatus];
 
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
-    toast.success(isFollowing ? `Unfollowed ${profile.name}` : `You are now following ${profile.name}`);
+  const handleFollow = async () => {
+    if (!user?.id) {
+      toast.error("Sign in to follow this profile.");
+      return;
+    }
+
+    setIsUpdatingFollow(true);
+    try {
+      if (isFollowing) {
+        await unfollowProfile(profile.id, user.id);
+        setIsFollowing(false);
+        setFollowerCount((count) => Math.max(0, count - 1));
+        toast.success(`Unfollowed ${profile.name}`);
+      } else {
+        await followProfile(profile.id, user.id);
+        setIsFollowing(true);
+        setFollowerCount((count) => count + 1);
+        toast.success(`You are now following ${profile.name}`);
+      }
+    } catch (error: any) {
+      toast.error(error?.message || "Could not update your follow.");
+    } finally {
+      setIsUpdatingFollow(false);
+    }
   };
 
   const handleMessage = async () => {
@@ -296,6 +366,16 @@ export default function UserProfile() {
                     </h1>
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{profile.role}</p>
+                  <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
+                    <span className="inline-flex items-center gap-1" aria-label={`Trust score ${profile.trustScore.toFixed(2)} out of 5`}>
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      {profile.trustScore.toFixed(2)} trust score
+                    </span>
+                    <span className="inline-flex items-center gap-1" aria-label={`${followerCount} followers`}>
+                      <UserPlus className="w-3.5 h-3.5" />
+                      {followerCount} followers
+                    </span>
+                  </div>
                   
                   {/* Explicit Availability Status Badge */}
                   <div className="pt-0.5">
@@ -315,13 +395,14 @@ export default function UserProfile() {
                 ) : <>
                 <Button
                   onClick={handleFollow}
+                  disabled={isUpdatingFollow}
                   variant={isFollowing ? "outline" : "default"}
                   className={`text-xs rounded-xl gap-1.5 ${
                     isFollowing ? "border-slate-300 dark:border-slate-700" : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/20"
                   }`}
                 >
                   <UserPlus className="w-4 h-4" />
-                  {isFollowing ? "Following" : "Follow"}
+                  {isUpdatingFollow ? "Updating..." : isFollowing ? "Following" : "Follow"}
                 </Button>
                 <Button
                   onClick={handleMessage}

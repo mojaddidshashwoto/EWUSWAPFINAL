@@ -112,6 +112,7 @@ function Router() {
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/wallet" component={() => <ProtectedRoute component={Wallet} />} />
       <Route path="/messages" component={() => <ProtectedRoute component={Messages} />} />
+      <Route path="/exchanges/:id" component={() => <ProtectedRoute component={SkillDetail} />} />
       <Route path="/exchanges" component={() => <ProtectedRoute component={Exchanges} />} />
       <Route path="/community" component={() => <ProtectedRoute component={Community} />} />
       <Route path="/groups" component={() => <ProtectedRoute component={GroupLearning} />} />

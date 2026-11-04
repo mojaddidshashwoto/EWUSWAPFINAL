@@ -3,7 +3,8 @@ import { Award, Star, CheckCircle2, TrendingUp, Sparkles, ShieldCheck } from "lu
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { listTopServiceProviders } from "@/lib/supabase";
+import { listTopServiceProviders, supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 export interface ProviderLeaderboardItem {
   providerId: string;
@@ -25,18 +26,32 @@ export function LeaderboardSection() {
 
   useEffect(() => {
     let isActive = true;
-    listTopServiceProviders()
-      .then((rows) => {
+    const refreshProviders = async () => {
+      try {
+        const rows = await listTopServiceProviders();
         if (isActive) setProviders(rows);
-      })
-      .catch((error) => {
-        if (isActive) console.error("Could not load service leaderboard:", error);
-      })
-      .finally(() => {
+      } catch (error: any) {
+        if (isActive) toast.error(error?.message || "Could not load service leaderboard.");
+      } finally {
         if (isActive) setIsLoading(false);
+      }
+    };
+
+    void refreshProviders();
+    const channel = supabase
+      .channel("top-providers-review-counts")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "ss_course_reviews" }, () => {
+        void refreshProviders();
+      })
+      .subscribe((status) => {
+        if (isActive && (status === "CHANNEL_ERROR" || status === "TIMED_OUT")) {
+          toast.error("Live provider review updates are unavailable.");
+        }
       });
+
     return () => {
       isActive = false;
+      void supabase.removeChannel(channel);
     };
   }, []);
 

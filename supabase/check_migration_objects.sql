@@ -209,6 +209,14 @@ with migration_expectations(
       ]::text[],
       array['public.ss_conversations.ss_conversations_select_member', 'public.ss_conversation_members.ss_conversation_members_select_member', 'public.ss_messages.ss_messages_select_member', 'public.ss_messages.ss_messages_insert_allowed']::text[],
       array['public.ss_escrow_transactions.ss_link_escrow_conversation']::text[]
+    ),
+    (
+      '20261105000000_course_review_realtime.sql',
+      array[]::text[],
+      array[]::text[],
+      array[]::text[],
+      array[]::text[],
+      array[]::text[]
     )
 ),
 missing_objects as (
@@ -292,7 +300,8 @@ missing_objects as (
     ('20260925000006_realtime_and_webhooks.sql', 'public', 'ss_notifications'),
     ('20261003000000_multiplayer_security_and_realtime.sql', 'public', 'ss_profiles'),
     ('20261003000000_multiplayer_security_and_realtime.sql', 'public', 'ss_escrow_transactions'),
-    ('20261104000000_booking_conversations_and_chat_hardening.sql', 'public', 'ss_messages')
+    ('20261104000000_booking_conversations_and_chat_hardening.sql', 'public', 'ss_messages'),
+    ('20261105000000_course_review_realtime.sql', 'public', 'ss_course_reviews')
   ) as expected(filename, schema_name, table_name)
   where not exists (
     select 1
