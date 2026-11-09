@@ -183,32 +183,6 @@ export default function LandingPage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 3. SOCIAL PROOF & PLATFORM METRICS */}
-      {/* ========================================================================= */}
-      <section id="community" className="py-12 border-y border-slate-800/80 bg-slate-950/60 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-black text-white">1,280+</div>
-              <div className="text-xs text-slate-400 font-medium">Active Campus Learners</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-black text-emerald-400">468+</div>
-              <div className="text-xs text-slate-400 font-medium">Completed Exchanges</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-black text-indigo-400">৳ 384k+</div>
-              <div className="text-xs text-slate-400 font-medium">Protected Escrow Volume</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-black text-amber-400">99.4%</div>
-              <div className="text-xs text-slate-400 font-medium">Positive Review Score</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
       {/* 4. HOW IT WORKS: DUAL-CURRENCY & ESCROW SAFETY */}
       {/* ========================================================================= */}
       <section id="how-it-works" className="py-20 md:py-28 px-4 sm:px-8 max-w-7xl mx-auto w-full">
