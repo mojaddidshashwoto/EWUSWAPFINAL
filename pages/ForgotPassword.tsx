@@ -8,8 +8,10 @@ import { ArrowLeft, CheckCircle2, Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Logo } from "@/components/ui/Logo";
 import { supabase } from "@/lib/supabase";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function ForgotPassword() {
+  const shouldReduceMotion = useReducedMotion();
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -86,7 +88,12 @@ export default function ForgotPassword() {
       <div className="absolute top-1/4 left-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md relative z-10">
+      <motion.div
+        className="w-full max-w-md relative z-10"
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.35, ease: "easeOut" }}
+      >
         {/* Brand Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-3">
@@ -97,6 +104,12 @@ export default function ForgotPassword() {
         </div>
 
         <Card className="border-slate-800 bg-slate-900/90 backdrop-blur-md shadow-2xl text-slate-100">
+          <motion.div
+            key={isRecovery ? (isPasswordUpdated ? "password-updated" : "password-recovery") : (isSubmitted ? "reset-sent" : "reset-form")}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: "easeOut" }}
+          >
           {isRecovery ? (
             isPasswordUpdated ? (
               <CardContent className="py-8 text-center space-y-4">
@@ -189,7 +202,7 @@ export default function ForgotPassword() {
                   >
                     {isLoading ? (
                       <span className="flex items-center gap-2">
-                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                        <span className="motion-safe:animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                         Sending reset link...
                       </span>
                     ) : (
@@ -221,6 +234,7 @@ export default function ForgotPassword() {
               </p>
             </CardContent>
           )}
+          </motion.div>
 
           <CardFooter className="flex justify-center border-t border-slate-800/60 pt-4">
             <Link href="/login" className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors">
@@ -229,7 +243,7 @@ export default function ForgotPassword() {
             </Link>
           </CardFooter>
         </Card>
-      </div>
+      </motion.div>
     </div>
   );
 }

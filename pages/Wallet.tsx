@@ -38,13 +38,16 @@ import {
   listWalletTransactions,
   type WalletTransaction,
 } from "@/lib/supabase";
+import { motion, useReducedMotion } from "framer-motion";
 
 const CONVERSION_RATE = 120; // 1 Credit = 120 BDT
 
 export default function WalletPage() {
+  const reducedMotion = useReducedMotion();
   const [filter, setFilter] = useState<"all" | "released" | "spent" | "refund" | "fee" | "topup" | "withdrawal">("all");
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
   const [userBdt, setUserBdt] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [copiedNumber, setCopiedNumber] = useState(false);
 
   // Modals state
@@ -80,6 +83,8 @@ export default function WalletPage() {
       setTransactions(txs);
     } catch (error: any) {
       toast.error(error?.message || "Could not load wallet data.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -186,7 +191,12 @@ export default function WalletPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-6xl mx-auto">
+      <motion.div
+        initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reducedMotion ? 0 : 0.32 }}
+        className="space-y-6 max-w-6xl mx-auto"
+      >
         {/* Header with Top-Up & Withdraw Buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -391,14 +401,27 @@ export default function WalletPage() {
           </CardHeader>
 
           <CardContent className="space-y-3">
-            {filteredTransactions.length === 0 ? (
+            {isLoading ? (
+              <div className="flex flex-col items-center gap-2 py-10 text-xs text-slate-500 dark:text-slate-400" role="status" aria-live="polite">
+                <motion.div
+                  animate={reducedMotion ? undefined : { rotate: 360 }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                >
+                  <RotateCcw className="h-4 w-4 text-indigo-500" />
+                </motion.div>
+                <span>Loading wallet activity...</span>
+              </div>
+            ) : filteredTransactions.length === 0 ? (
               <div className="text-center py-10 text-slate-400 text-xs">
                 No transactions found under this category.
               </div>
             ) : (
               filteredTransactions.map((tx) => (
-                <div
+                <motion.div
                   key={tx.id}
+                  initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: reducedMotion ? 0 : 0.22 }}
                   className="p-4 rounded-xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/40 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   <div className="space-y-1">
@@ -434,12 +457,12 @@ export default function WalletPage() {
                       {tx.status}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))
             )}
           </CardContent>
         </Card>
-      </div>
+      </motion.div>
 
       {/* ========================================================================= */}
       {/* 1. BKASH / NAGAD TOP-UP MODAL */}

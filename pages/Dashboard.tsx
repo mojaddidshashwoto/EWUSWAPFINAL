@@ -14,7 +14,7 @@ import {
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase, getCurrentUser, listMyEscrowTransactions, listPublishedSkillCourses } from "@/lib/supabase";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { animate, motion, AnimatePresence, useMotionValue, useReducedMotion, type Variants } from "framer-motion";
 
 type SocialPostActivity = {
   id: string;
@@ -75,24 +75,64 @@ const containerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.05,
+      staggerChildren: 0.08,
+      delayChildren: 0.03,
     },
   },
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 22 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      type: "spring" as const,
-      stiffness: 240,
-      damping: 24,
+      duration: 0.35,
+      ease: [0.22, 1, 0.36, 1],
     },
   },
 };
+
+const listVariants: Variants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const rowVariants: Variants = {
+  hidden: { opacity: 0, y: 6 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.24, ease: "easeOut" },
+  },
+};
+
+function AnimatedBalance({ value }: { value: number }) {
+  const reducedMotion = useReducedMotion();
+  const count = useMotionValue(value);
+  const [displayValue, setDisplayValue] = useState(value);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      count.set(value);
+      setDisplayValue(value);
+      return;
+    }
+
+    const controls = animate(count, value, {
+      duration: 0.55,
+      ease: "easeOut",
+      onUpdate: (latest) => setDisplayValue(Math.round(latest)),
+    });
+    return () => controls.stop();
+  }, [count, reducedMotion, value]);
+
+  return <>{displayValue.toLocaleString()}</>;
+}
 
 const RECOMMENDED_SKILLS: SkillCardProps[] = [
   {
@@ -181,6 +221,7 @@ const UPCOMING_EXCHANGES = [
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { user: authUser } = useAuth();
+  const reducedMotion = useReducedMotion();
   const [earnModalOpen, setEarnModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [userBdt, setUserBdt] = useState(0);
@@ -354,8 +395,8 @@ export default function Dashboard() {
     <DashboardLayout>
       <motion.div
         variants={containerVariants}
-        initial="hidden"
-        animate="visible"
+        initial={reducedMotion ? false : "hidden"}
+        animate={reducedMotion ? undefined : "visible"}
         className="space-y-8"
       >
         {/* 1. THE LIVING HERO SECTION - Deep Space Spatial Glass */}
@@ -418,10 +459,10 @@ export default function Dashboard() {
                     <AnimatePresence mode="wait">
                       <motion.div
                         key={currentActivity?.id}
-                        initial={{ opacity: 0, y: 7 }}
+                        initial={reducedMotion ? false : { opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -7 }}
-                        transition={{ duration: 0.25 }}
+                        exit={reducedMotion ? undefined : { opacity: 0, y: -5 }}
+                        transition={{ duration: reducedMotion ? 0 : 0.2 }}
                         className="text-[11px] font-medium text-zinc-200 truncate max-w-[260px] sm:max-w-md flex items-center gap-2"
                       >
                         <span className="truncate">{currentActivity?.text}</span>
@@ -483,7 +524,7 @@ export default function Dashboard() {
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/10 backdrop-blur-md">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Available BDT Balance</p>
                 <div className="flex items-baseline gap-2 mt-1.5">
-                  <span className="text-4xl font-black tracking-tighter text-emerald-400">৳ {userBdt.toLocaleString()}</span>
+                  <span className="text-4xl font-black tracking-tighter text-emerald-400">৳ <AnimatedBalance value={userBdt} /></span>
                   <span className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest">BDT</span>
                 </div>
                 <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider font-medium">Single source of truth for skill swaps & escrow</p>
@@ -532,44 +573,53 @@ export default function Dashboard() {
               </Button>
             </CardHeader>
 
-            <CardContent className="space-y-2.5">
+            <CardContent>
               {activeEscrows.length === 0 ? (
                 <p className="py-8 text-center text-xs text-zinc-500">No active exchanges yet.</p>
-              ) : activeEscrows.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all duration-200"
+              ) : (
+                <motion.div
+                  variants={listVariants}
+                  initial={reducedMotion ? false : "hidden"}
+                  animate={reducedMotion ? undefined : "visible"}
+                  className="space-y-2.5"
                 >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={item.counterpartyAvatar}
-                      alt={item.counterpartyName}
-                      className="w-10 h-10 rounded-full object-cover border border-white/15 shrink-0"
-                    />
-                    <div>
-                      <h4 className="text-xs font-bold text-white">{item.title}</h4>
-                      <p className="text-[10px] text-zinc-400 flex items-center gap-1.5 mt-0.5">
-                        <span>with {item.counterpartyName}</span>
-                        <span>•</span>
-                        <span className="text-indigo-400 font-semibold">{item.format}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-end gap-3 text-right">
-                    <div className="text-xs">
-                      <div className="font-semibold text-zinc-200">{item.date}</div>
-                      <div className="text-[10px] text-zinc-500 flex items-center gap-1 justify-end font-medium">
-                        <Clock className="w-3 h-3" />
-                        {item.time}
+                  {activeEscrows.map((item) => (
+                    <motion.div
+                      key={item.id}
+                      variants={rowVariants}
+                      className="p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 hover:border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all duration-200"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={item.counterpartyAvatar}
+                          alt={item.counterpartyName}
+                          className="w-10 h-10 rounded-full object-cover border border-white/15 shrink-0"
+                        />
+                        <div>
+                          <h4 className="text-xs font-bold text-white">{item.title}</h4>
+                          <p className="text-[10px] text-zinc-400 flex items-center gap-1.5 mt-0.5">
+                            <span>with {item.counterpartyName}</span>
+                            <span>•</span>
+                            <span className="text-indigo-400 font-semibold">{item.format}</span>
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[10px] font-bold">
-                      {item.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                      <div className="flex items-center justify-between sm:justify-end gap-3 text-right">
+                        <div className="text-xs">
+                          <div className="font-semibold text-zinc-200">{item.date}</div>
+                          <div className="text-[10px] text-zinc-500 flex items-center gap-1 justify-end font-medium">
+                            <Clock className="w-3 h-3" />
+                            {item.time}
+                          </div>
+                        </div>
+                        <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30 text-[10px] font-bold">
+                          {item.status}
+                        </Badge>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -598,18 +648,24 @@ export default function Dashboard() {
           </div>
 
           {/* Horizontal Scroll Flex Container */}
-          <div className="flex gap-4 overflow-x-auto pb-6 pt-2 scrollbar-thin scrollbar-thumb-zinc-800 px-1">
+          <motion.div
+            variants={listVariants}
+            initial={reducedMotion ? false : "hidden"}
+            animate={reducedMotion ? undefined : "visible"}
+            className="flex gap-4 overflow-x-auto pb-6 pt-2 scrollbar-thin scrollbar-thumb-zinc-800 px-1"
+          >
             {recommendedSkills.length === 0 ? (
               <p className="py-8 text-xs text-zinc-500">No published services are available yet.</p>
             ) : recommendedSkills.map((skill) => (
-              <SkillCard
-                key={skill.id}
-                {...skill}
-                detailsHref={`/exchanges/${skill.id}`}
-                onBook={handleBookSkill}
-              />
+              <motion.div key={skill.id} variants={rowVariants} className="shrink-0">
+                <SkillCard
+                  {...skill}
+                  detailsHref={`/exchanges/${skill.id}`}
+                  onBook={handleBookSkill}
+                />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </motion.div>
 
         {/* 6. CASCADE ITEM 4: LEADERBOARD INTEGRATION */}

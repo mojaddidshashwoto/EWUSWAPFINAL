@@ -60,6 +60,7 @@ export default function MessagesPage() {
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [realtimeStatus, setRealtimeStatus] = useState<string>("CONNECTING");
+  const [arrivingMessageId, setArrivingMessageId] = useState<string | null>(null);
 
   // Call Modal State
   const [isCallActive, setIsCallActive] = useState(false);
@@ -67,6 +68,12 @@ export default function MessagesPage() {
   const [activeCall, setActiveCall] = useState<{ id: string; isCaller: boolean } | null>(null);
 
   const activeConv = conversations.find((c) => c.id === activeConvId);
+
+  useEffect(() => {
+    if (!arrivingMessageId) return;
+    const timeout = window.setTimeout(() => setArrivingMessageId(null), 300);
+    return () => window.clearTimeout(timeout);
+  }, [arrivingMessageId]);
 
   useEffect(() => {
     let isActive = true;
@@ -111,6 +118,7 @@ export default function MessagesPage() {
           const rec = payload.new;
           if (!rec) return;
 
+          setArrivingMessageId(rec.id);
           setConversations((prev) =>
             deduplicateConversations(prev.map((c) => {
               if (c.id === (rec.conversation_id || activeConvId)) {
@@ -156,6 +164,7 @@ export default function MessagesPage() {
           const rec = payload.new;
           if (!rec) return;
 
+          setArrivingMessageId(rec.id);
           setConversations((prev) =>
             deduplicateConversations(prev.map((c) => {
               if (c.id === (rec.conversation_id || activeConvId)) {
@@ -224,6 +233,7 @@ export default function MessagesPage() {
     try {
       const row = await sendSupabaseRealtimeMessage({ conversationId: activeConv.id, text });
       setMessageInput("");
+      setArrivingMessageId(row.id);
       setConversations((current) => deduplicateConversations(current.map((conversation) => {
         if (conversation.id !== activeConv.id || conversation.messages.some((message) => message.id === row.id)) return conversation;
         return {
@@ -420,13 +430,19 @@ export default function MessagesPage() {
           </div>
 
           {/* Messages Timeline */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-4">
+          <div
+            key={activeConv.id}
+            className="flex-1 p-6 overflow-y-auto space-y-4 motion-safe:animate-fade-in motion-reduce:animate-none"
+          >
             {activeConv.messages.map((msg) => {
               const isMe = msg.senderId === user?.id;
+              const arrivalClass = msg.id === arrivingMessageId
+                ? "motion-safe:animate-[slide-up_240ms_ease-out_both] motion-reduce:animate-none"
+                : "";
 
               if (msg.isCallRequest) {
                 return (
-                  <div key={msg.id} className="flex justify-center my-2">
+                  <div key={msg.id} className={`flex justify-center my-2 ${arrivalClass}`}>
                     <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 max-w-sm w-full text-center space-y-3">
                       <div className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center mx-auto shadow-md">
                         <PhoneCall className="w-5 h-5" />
@@ -458,7 +474,7 @@ export default function MessagesPage() {
               }
 
               return (
-                <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"} ${arrivalClass}`}>
                   <div
                     className={`max-w-xs sm:max-w-md px-4 py-2.5 rounded-2xl text-xs space-y-1 ${
                       isMe

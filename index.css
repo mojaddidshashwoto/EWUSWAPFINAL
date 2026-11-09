@@ -42,6 +42,15 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes skill-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -4px; }
+}
+
+.skill-float-card {
+  animation: skill-float 4.8s ease-in-out infinite;
+}
+
 @keyframes float-slow-1 {
   0%, 100% { transform: translate(0px, 0px) scale(1); }
   33% { transform: translate(35px, -35px) scale(1.12); }
@@ -274,6 +283,22 @@ select {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .skill-float-card {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .animate-float-1,
+  .animate-float-2,
+  .animate-float-3 {
+    animation: none;
+  }
+
+  .skill-float-card {
+    animation-duration: 6s;
   }
 }
 

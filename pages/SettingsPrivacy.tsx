@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShieldCheck, Lock, EyeOff, MessageCircle, Phone, Save, Bell, User } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfilePrivacy } from "@/lib/supabase";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function SettingsPrivacyPage() {
+  const shouldReduceMotion = useReducedMotion();
   const [messagePolicy, setMessagePolicy] = useState<"everyone" | "followers" | "matches" | "nobody">("followers");
   const [callPolicy, setCallPolicy] = useState<"everyone" | "followers" | "matches" | "nobody">("matches");
   const [hideContactInfo, setHideContactInfo] = useState(true);
@@ -36,7 +38,12 @@ export default function SettingsPrivacyPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-4xl mx-auto">
+      <motion.div
+        className="space-y-6 max-w-4xl mx-auto"
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: "easeOut" }}
+      >
         {/* Header */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -49,7 +56,12 @@ export default function SettingsPrivacyPage() {
         </div>
 
         {/* COMMUNICATION POLICIES */}
-        <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.25, delay: shouldReduceMotion ? 0 : 0.06, ease: "easeOut" }}
+        >
+        <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm transition-shadow duration-200 hover:shadow-md">
           <CardHeader>
             <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <MessageCircle className="w-4 h-4 text-indigo-500" />
@@ -61,7 +73,7 @@ export default function SettingsPrivacyPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Message Policy */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 transition-colors duration-200 hover:bg-slate-100/70 dark:hover:bg-slate-900/70">
               <div className="space-y-0.5">
                 <Label className="text-xs font-bold text-slate-900 dark:text-white">Direct Message Policy</Label>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">Who can initiate a chat conversation with you?</p>
@@ -80,7 +92,7 @@ export default function SettingsPrivacyPage() {
             </div>
 
             {/* Call Policy */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 transition-colors duration-200 hover:bg-slate-100/70 dark:hover:bg-slate-900/70">
               <div className="space-y-0.5">
                 <Label className="text-xs font-bold text-slate-900 dark:text-white">Call Session Policy</Label>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">Who can send you WebRTC video/audio call proposals?</p>
@@ -99,9 +111,15 @@ export default function SettingsPrivacyPage() {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
 
         {/* PERSONAL DATA & RLS PRIVACY PROTECTION */}
-        <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <motion.div
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.25, delay: shouldReduceMotion ? 0 : 0.12, ease: "easeOut" }}
+        >
+        <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm transition-shadow duration-200 hover:shadow-md">
           <CardHeader>
             <CardTitle className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <EyeOff className="w-4 h-4 text-emerald-500" />
@@ -113,7 +131,7 @@ export default function SettingsPrivacyPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Hide Exact Address & Phone Toggle */}
-            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 transition-colors duration-200 hover:bg-slate-100/70 dark:hover:bg-slate-900/70">
               <div className="space-y-0.5 pr-4">
                 <Label htmlFor="hide-contact" className="text-xs font-bold text-slate-900 dark:text-white cursor-pointer">
                   Hide Exact Street Address & Phone Number
@@ -131,7 +149,7 @@ export default function SettingsPrivacyPage() {
             </div>
 
             {/* Show Online Status */}
-            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 transition-colors duration-200 hover:bg-slate-100/70 dark:hover:bg-slate-900/70">
               <div className="space-y-0.5 pr-4">
                 <Label htmlFor="show-online" className="text-xs font-bold text-slate-900 dark:text-white cursor-pointer">
                   Display Online Status Badge
@@ -149,7 +167,7 @@ export default function SettingsPrivacyPage() {
             </div>
 
             {/* Show Recent Activity */}
-            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 transition-colors duration-200 hover:bg-slate-100/70 dark:hover:bg-slate-900/70">
               <div className="space-y-0.5 pr-4">
                 <Label htmlFor="show-activity" className="text-xs font-bold text-slate-900 dark:text-white cursor-pointer">
                   Show Activity Feed
@@ -178,7 +196,8 @@ export default function SettingsPrivacyPage() {
             </Button>
           </CardFooter>
         </Card>
-      </div>
+        </motion.div>
+      </motion.div>
     </DashboardLayout>
   );
 }

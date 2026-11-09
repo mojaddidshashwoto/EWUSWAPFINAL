@@ -367,7 +367,68 @@ export default function UserProfile() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <style>{`
+        @keyframes profile-page-enter {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes profile-cover-enter {
+          from { opacity: 0.7; transform: scale(1.035); }
+          to { opacity: 0.9; transform: scale(1); }
+        }
+        @keyframes profile-avatar-enter {
+          from { opacity: 0; transform: translateY(10px) scale(0.96); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes profile-progress-reveal {
+          from { transform: scaleX(0); }
+          to { transform: scaleX(1); }
+        }
+        .profile-experience {
+          animation: profile-page-enter 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        }
+        .profile-experience .profile-cover-image {
+          animation: profile-cover-enter 900ms ease-out both;
+        }
+        .profile-experience .profile-avatar {
+          animation: profile-avatar-enter 520ms 100ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        }
+        .profile-experience .profile-trust-progress {
+          transform-origin: left center;
+          animation: profile-progress-reveal 850ms 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        }
+        .profile-experience .profile-skill-card {
+          transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        }
+        .profile-experience .profile-skill-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 12px 24px -16px rgb(15 23 42 / 0.35);
+        }
+        .profile-experience .profile-skill-badge {
+          transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+        .profile-experience .profile-skill-badge:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 12px -8px currentColor;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .profile-experience,
+          .profile-experience .profile-cover-image,
+          .profile-experience .profile-avatar,
+          .profile-experience .profile-trust-progress {
+            animation: none;
+          }
+          .profile-experience .profile-skill-card,
+          .profile-experience .profile-skill-badge {
+            transition: none;
+          }
+          .profile-experience .profile-skill-card:hover,
+          .profile-experience .profile-skill-badge:hover {
+            transform: none;
+          }
+        }
+      `}</style>
+      <div className="profile-experience space-y-6 max-w-5xl mx-auto">
         {/* PROFILE HEADER & COVER BANNER */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
           {/* Cover Image Banner */}
@@ -375,7 +436,7 @@ export default function UserProfile() {
             <img
               src={profile.coverUrl}
               alt="Profile Cover"
-              className="w-full h-full object-cover opacity-90"
+              className="profile-cover-image w-full h-full object-cover opacity-90"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
           </div>
@@ -388,7 +449,7 @@ export default function UserProfile() {
                 <img
                   src={profile.avatarUrl}
                   alt={profile.name}
-                  className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white dark:border-slate-900 shadow-lg shrink-0"
+                  className="profile-avatar w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white dark:border-slate-900 shadow-lg shrink-0"
                 />
                 <div className="mb-1 space-y-1">
                   <div className="flex items-center gap-2">
@@ -408,6 +469,21 @@ export default function UserProfile() {
                       {followerCount} followers
                     </span>
                   </div>
+                  {profile.trustScore > 0 && (
+                    <div
+                      className="h-1 w-24 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+                      role="progressbar"
+                      aria-label="Trust score"
+                      aria-valuemin={0}
+                      aria-valuemax={5}
+                      aria-valuenow={Math.min(5, Math.max(0, profile.trustScore))}
+                    >
+                      <div
+                        className="profile-trust-progress h-full rounded-full bg-amber-400"
+                        style={{ width: `${Math.min(100, Math.max(0, profile.trustScore / 5 * 100))}%` }}
+                      />
+                    </div>
+                  )}
                   
                   {/* Explicit Availability Status Badge */}
                   <div className="pt-0.5">
@@ -584,7 +660,7 @@ export default function UserProfile() {
           <TabsContent value="skills">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Skills I Teach */}
-              <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <Card className="profile-skill-card bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <GraduationCap className="w-4 h-4 text-emerald-500" />
@@ -593,7 +669,7 @@ export default function UserProfile() {
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
                   {profile.skillsTeaching.map((skill) => (
-                    <Badge key={skill} className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 px-3 py-1 text-xs">
+                    <Badge key={skill} className="profile-skill-badge bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 px-3 py-1 text-xs">
                       {skill}
                     </Badge>
                   ))}
@@ -601,7 +677,7 @@ export default function UserProfile() {
               </Card>
 
               {/* Skills I Want to Learn */}
-              <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
+              <Card className="profile-skill-card bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <BookOpen className="w-4 h-4 text-indigo-500" />
@@ -610,7 +686,7 @@ export default function UserProfile() {
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
                   {profile.skillsLearning.map((skill) => (
-                    <Badge key={skill} className="bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 px-3 py-1 text-xs">
+                    <Badge key={skill} className="profile-skill-badge bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30 px-3 py-1 text-xs">
                       {skill}
                     </Badge>
                   ))}

@@ -24,6 +24,7 @@ import { useCallback, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { motionEase, revealItemVariants, staggerVariants } from "@/lib/motion";
 import { BrandIntro, shouldPlayBrandIntro } from "@/components/BrandIntro";
+import { FloatingSkillCategories, SkillExchangeAnimation } from "@/components/SkillExchangeAnimation";
 
 const TOP_SKILLS = [
   {
@@ -69,6 +70,9 @@ const TOP_SKILLS = [
     tags: ["Tableau", "Excel", "BI"],
   },
 ];
+
+const HERO_FIRST_LINE = ["Teach", "what", "you", "know."];
+const HERO_SECOND_LINE = ["Learn", "what", "you", "love."];
 
 export default function LandingPage() {
   const shouldReduceMotion = useReducedMotion();
@@ -162,12 +166,33 @@ export default function LandingPage() {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           </motion.div>
 
-          <motion.h1 variants={shouldReduceMotion ? undefined : revealItemVariants} transition={{ duration: shouldReduceMotion ? 0 : 0.65, ease: motionEase }} className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.08]">
-            Teach what you know. <br className="hidden sm:inline" />
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.08]">
+            {HERO_FIRST_LINE.map((word, index) => (
+              <motion.span
+                key={word}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.48, delay: shouldReduceMotion ? 0 : 0.12 + index * 0.055, ease: motionEase }}
+                className="mr-[0.22em] inline-block"
+              >
+                {word}
+              </motion.span>
+            ))}
+            <br className="hidden sm:inline" />
             <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400 bg-clip-text text-transparent">
-              Learn what you love.
+              {HERO_SECOND_LINE.map((word, index) => (
+                <motion.span
+                  key={word}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.48, delay: shouldReduceMotion ? 0 : 0.34 + index * 0.055, ease: motionEase }}
+                  className="mr-[0.22em] inline-block"
+                >
+                  {word}
+                </motion.span>
+              ))}
             </span>
-          </motion.h1>
+          </h1>
 
           <motion.p variants={shouldReduceMotion ? undefined : revealItemVariants} transition={{ duration: shouldReduceMotion ? 0 : 0.55, ease: motionEase }} className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
             East West University's student-to-student marketplace. Trade knowledge with fellow peers for free or book escrow-protected sessions using <strong>Skill Credits</strong> and <strong>BDT (৳)</strong>.
@@ -207,8 +232,11 @@ export default function LandingPage() {
               <Coins className="w-4 h-4 text-amber-400" /> Instant bKash & Nagad Cashout
             </span>
           </motion.div>
+          <FloatingSkillCategories />
         </motion.div>
       </motion.section>
+
+      <SkillExchangeAnimation />
 
       {/* ========================================================================= */}
       {/* 4. HOW IT WORKS: DUAL-CURRENCY & ESCROW SAFETY */}
@@ -398,7 +426,7 @@ export default function LandingPage() {
       {/* ========================================================================= */}
       {/* 7. PRODUCTION FOOTER */}
       {/* ========================================================================= */}
-      <footer className="mt-auto border-t border-slate-800 bg-slate-950/80 py-12 px-4 sm:px-8 text-xs text-slate-400">
+      <motion.footer initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }} whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.1 }} transition={{ duration: shouldReduceMotion ? 0 : 0.5, ease: motionEase }} className="mt-auto border-t border-slate-800 bg-slate-950/80 py-12 px-4 sm:px-8 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
           <div className="space-y-3 md:col-span-1">
 <div className="flex items-center gap-2"><Logo size="sm" tone="light" tagline /></div>
@@ -494,7 +522,7 @@ export default function LandingPage() {
             <span className="text-emerald-500 font-semibold">System Status: Operational</span>
           </div>
         </div>
-      </footer>
+      </motion.footer>
     </motion.div>
     <AnimatePresence>
       {introPlaying && <BrandIntro onReveal={revealLanding} onFinish={finishIntro} />}

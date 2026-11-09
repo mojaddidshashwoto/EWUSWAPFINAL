@@ -9,8 +9,10 @@ import { ArrowRight, Eye, EyeOff, Lock, Mail, Sparkles, User } from "lucide-reac
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Logo } from "@/components/ui/Logo";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function Signup() {
+  const shouldReduceMotion = useReducedMotion();
   const [, setLocation] = useLocation();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -82,13 +84,18 @@ export default function Signup() {
       <div className="absolute top-1/4 right-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute bottom-1/4 left-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
 
-      <div className="w-full max-w-md relative z-10 my-auto">
+      <motion.div
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-md relative z-10 my-auto"
+      >
         {/* Brand Header */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium mb-2.5">
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             Join the Skill Exchange Movement
-          </div>
+        </div>
 <Link href="/" className="inline-block mb-3 hover:opacity-90 transition-opacity"><Logo size="lg" tone="light" /></Link>
           <p className="text-slate-400 text-xs sm:text-sm mt-1">
             Create your free account and start trading knowledge.
@@ -236,7 +243,7 @@ export default function Signup() {
             </p>
           </CardFooter>
         </Card>
-      </div>
+      </motion.div>
     </div>
   );
 }

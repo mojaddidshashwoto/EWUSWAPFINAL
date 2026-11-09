@@ -19,6 +19,7 @@ import {
   updateGroupLearningSession,
   type GroupLearningSession,
 } from "@/lib/supabase";
+import { motion, useReducedMotion } from "framer-motion";
 
 const GROUP_CATEGORIES = ["Arts", "Business", "Career", "Design", "Finance", "Languages", "Marketing", "Music", "Photography", "Productivity", "Science", "Technology", "Wellness", "Writing"];
 
@@ -27,6 +28,7 @@ function toLocalDateTimeInput(value: Date) {
 }
 
 export default function GroupLearningPage() {
+  const shouldReduceMotion = useReducedMotion();
   const [groups, setGroups] = useState<GroupLearningSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -137,7 +139,12 @@ export default function GroupLearningPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-6xl mx-auto">
+      <motion.div
+        className="space-y-6 max-w-6xl mx-auto"
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: "easeOut" }}
+      >
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -187,8 +194,19 @@ export default function GroupLearningPage() {
             <CardContent className="py-12 text-sm text-slate-500">No group sessions are listed yet. Host the first one.</CardContent>
           </Card>
         ) : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {groups.map((grp) => (
-            <Card key={grp.id} className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between overflow-hidden">
+          {groups.map((grp, index) => (
+            <motion.div
+              key={grp.id}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: shouldReduceMotion ? 0 : 0.25,
+                delay: shouldReduceMotion ? 0 : Math.min(index * 0.05, 0.25),
+                ease: "easeOut",
+              }}
+              whileHover={shouldReduceMotion ? undefined : { y: -2 }}
+            >
+            <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between overflow-hidden transition-shadow duration-200 hover:shadow-md">
               <div>
                 <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-row items-center justify-between">
                   <Badge variant="secondary" className="text-[10px]">
@@ -261,9 +279,10 @@ export default function GroupLearningPage() {
                 )}
               </CardFooter>
             </Card>
+            </motion.div>
           ))}
         </div>}
-      </div>
+      </motion.div>
 
       {/* CREATE GROUP MODAL */}
       <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>

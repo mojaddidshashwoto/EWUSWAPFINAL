@@ -45,6 +45,7 @@ import {
   Coins,
 } from "lucide-react";
 import { toast } from "sonner";
+import { motion, useReducedMotion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getCurrentUser,
@@ -63,6 +64,7 @@ import {
 } from "@/lib/supabase";
 
 export default function AdminDashboard() {
+  const shouldReduceMotion = useReducedMotion();
   const { user, hasRole, isLoading: isLoadingAuth } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -221,7 +223,12 @@ export default function AdminDashboard() {
   if (!isLoadingAuth && !isAuthorized) {
     return (
       <DashboardLayout>
-        <div className="max-w-2xl mx-auto py-16 text-center space-y-6">
+        <motion.div
+          className="max-w-2xl mx-auto py-16 text-center space-y-6"
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: "easeOut" }}
+        >
           <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center mx-auto shadow-sm">
             <Lock className="w-8 h-8" />
           </div>
@@ -241,7 +248,7 @@ export default function AdminDashboard() {
               Return to Student Dashboard
             </Button>
           </div>
-        </div>
+        </motion.div>
       </DashboardLayout>
     );
   }
@@ -271,7 +278,12 @@ export default function AdminDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <motion.div
+        className="space-y-6 max-w-7xl mx-auto"
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: "easeOut" }}
+      >
         {/* Admin Header with Institutional Status Badge */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl border border-indigo-900/50">
           <div className="space-y-1">
@@ -352,6 +364,11 @@ export default function AdminDashboard() {
           {/* TAB 1: OVERVIEW METRICS & PLATFORM REVENUE */}
           {/* ========================================================================= */}
           <TabsContent value="overview" className="space-y-6 m-0">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: "easeOut" }}
+            >
             {/* 4 PRIMARY METRIC CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* 1. Total Registered Users */}
@@ -523,10 +540,16 @@ export default function AdminDashboard() {
                 </CardFooter>
               </Card>
             </div>
+            </motion.div>
           </TabsContent>
 
           {isAdmin && (
             <TabsContent value="credit-management" className="space-y-4 m-0">
+              <motion.div
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: "easeOut" }}
+              >
               <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-xs">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -591,6 +614,7 @@ export default function AdminDashboard() {
                   )}
                 </CardContent>
               </Card>
+              </motion.div>
             </TabsContent>
           )}
 
@@ -598,6 +622,11 @@ export default function AdminDashboard() {
           {/* TAB 2: VERIFICATION QUEUE (ss_verification_requests) */}
           {/* ========================================================================= */}
           <TabsContent value="verifications" className="space-y-4 m-0">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: "easeOut" }}
+            >
             <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-xs">
               <CardHeader className="pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
@@ -741,12 +770,18 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+            </motion.div>
           </TabsContent>
 
           {/* ========================================================================= */}
           {/* TAB 3: DISPUTES QUEUE (ss_resolve_dispute) */}
           {/* ========================================================================= */}
           <TabsContent value="disputes" className="space-y-4 m-0">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: "easeOut" }}
+            >
             <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-xs">
               <CardHeader className="pb-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
@@ -827,7 +862,7 @@ export default function AdminDashboard() {
                               Resolved: {dsp.resolution?.replace("_", " ").toUpperCase()}
                             </Badge>
                           ) : (
-                            <Badge className="bg-rose-500 text-[10px] font-bold animate-pulse">
+                            <Badge className="bg-rose-500 text-[10px] font-bold motion-safe:animate-pulse">
                               Action Required
                             </Badge>
                           )}
@@ -908,9 +943,10 @@ export default function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+            </motion.div>
           </TabsContent>
         </Tabs>
-      </div>
+      </motion.div>
 
       {/* ========================================================================= */}
       {/* DIALOG 1: REJECT VERIFICATION DIALOG */}

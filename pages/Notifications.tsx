@@ -53,6 +53,13 @@ export default function NotificationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMarkingRead, setIsMarkingRead] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [arrivingNotificationId, setArrivingNotificationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!arrivingNotificationId) return;
+    const timeout = window.setTimeout(() => setArrivingNotificationId(null), 320);
+    return () => window.clearTimeout(timeout);
+  }, [arrivingNotificationId]);
 
   useEffect(() => {
     let isActive = true;
@@ -80,6 +87,7 @@ export default function NotificationsPage() {
         (payload) => {
           const notification = toNotification(payload.new as NotificationRow);
           if (isActive) {
+            setArrivingNotificationId(notification.id);
             setNotifications((current) => mergeNotifications(current, [notification]));
           }
         },
@@ -180,8 +188,15 @@ export default function NotificationsPage() {
             {notifications.map((notification) => (
               <Card
                 key={notification.id}
-                className={`border-slate-200/80 dark:border-slate-800 shadow-sm transition-all ${
-                  !notification.isRead ? "bg-indigo-50/40 dark:bg-slate-900/90 border-l-4 border-l-indigo-600" : "bg-white dark:bg-slate-900"
+                aria-label={`${notification.isRead ? "Read" : "Unread"} notification: ${notification.title}`}
+                className={`border-slate-200/80 dark:border-slate-800 border-l-4 shadow-sm transition-colors duration-300 motion-reduce:transition-none ${
+                  arrivingNotificationId === notification.id
+                    ? "motion-safe:animate-[slide-up_260ms_ease-out_both] motion-reduce:animate-none"
+                    : ""
+                } ${
+                  !notification.isRead
+                    ? "bg-indigo-50/40 dark:bg-slate-900/90 border-l-indigo-600"
+                    : "bg-white dark:bg-slate-900 border-l-transparent"
                 }`}
               >
                 <CardContent className="p-4 flex items-start justify-between gap-4">
@@ -192,7 +207,13 @@ export default function NotificationsPage() {
                     <div>
                       <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         {notification.title}
-                        {!notification.isRead && <span className="w-2 h-2 rounded-full bg-indigo-600" />}
+                        <span
+                          aria-hidden="true"
+                          className={`w-2 h-2 rounded-full bg-indigo-600 transition-all duration-200 motion-reduce:transition-none ${
+                            notification.isRead ? "opacity-0 scale-50" : "opacity-100 scale-100"
+                          }`}
+                        />
+                        <span className="sr-only">{notification.isRead ? "Read" : "Unread"}</span>
                       </h4>
                       <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">{notification.message}</p>
                       <span className="text-[10px] text-slate-400 mt-1 block">

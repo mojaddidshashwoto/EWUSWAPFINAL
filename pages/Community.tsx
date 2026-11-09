@@ -13,8 +13,10 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { createCommunityPost, createConversation, listCommunityPosts, supabase, toggleCommunityPostLike, type CommunityPost as Post } from "@/lib/supabase";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function CommunityPage() {
+  const shouldReduceMotion = useReducedMotion();
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -118,7 +120,12 @@ export default function CommunityPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-4xl mx-auto">
+      <motion.div
+        className="space-y-6 max-w-4xl mx-auto"
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: "easeOut" }}
+      >
         {/* Header */}
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
@@ -182,8 +189,19 @@ export default function CommunityPage() {
             </Card>
           )}
           {isLoading && <p className="py-8 text-center text-xs text-slate-500">Loading community posts...</p>}
-          {posts.map((post) => (
-            <Card id={post.id} key={post.id} className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+          {posts.map((post, index) => (
+            <motion.div
+              key={post.id}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: shouldReduceMotion ? 0 : 0.25,
+                delay: shouldReduceMotion ? 0 : Math.min(index * 0.045, 0.2),
+                ease: "easeOut",
+              }}
+              whileHover={shouldReduceMotion ? undefined : { y: -2 }}
+            >
+            <Card id={post.id} className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden transition-shadow duration-200 hover:shadow-md">
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <div className="flex items-center gap-3">
                   <img src={post.authorAvatar} alt={post.authorName} className="w-10 h-10 rounded-full object-cover border border-slate-200 dark:border-slate-700" />
@@ -248,9 +266,10 @@ export default function CommunityPage() {
                 </Button>
               </CardFooter>
             </Card>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
     </DashboardLayout>
   );
 }

@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { EscrowCheckoutModal } from "@/components/EscrowCheckoutModal";
 import { createFreeSkillSwapProposal, listPublishedSkillCourses } from "@/lib/supabase";
+import { motion, useReducedMotion } from "framer-motion";
 
 const SAMPLE_SKILL_DATA = {
   id: "l1",
@@ -67,6 +68,7 @@ const SAMPLE_SKILL_DATA = {
 export default function SkillDetail() {
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
+  const reducedMotion = useReducedMotion();
 
   const [swapModalOpen, setSwapModalOpen] = useState(false);
   const [payModalOpen, setPayModalOpen] = useState(false);
@@ -189,7 +191,15 @@ export default function SkillDetail() {
   if (isLoadingSkill) {
     return (
       <DashboardLayout>
-        <p className="py-16 text-center text-sm text-slate-500">Loading skill details...</p>
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-sm text-slate-500" role="status" aria-live="polite">
+          <motion.div
+            animate={reducedMotion ? undefined : { rotate: 360 }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+          >
+            <RefreshCw className="h-5 w-5 text-indigo-500" />
+          </motion.div>
+          <span>Loading skill details...</span>
+        </div>
       </DashboardLayout>
     );
   }
@@ -197,21 +207,31 @@ export default function SkillDetail() {
   if (isListingNotFound) {
     return (
       <DashboardLayout>
-        <div className="mx-auto max-w-xl space-y-4 py-16 text-center">
+        <motion.div
+          initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reducedMotion ? 0 : 0.28 }}
+          className="mx-auto max-w-xl space-y-4 py-16 text-center"
+        >
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Skill not found</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">This course or service is no longer published or the link is invalid.</p>
           <Link href="/discover" className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-500">
             <ArrowLeft className="h-4 w-4" />
             Back to Discovery
           </Link>
-        </div>
+        </motion.div>
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <motion.div
+        initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reducedMotion ? 0 : 0.32 }}
+        className="space-y-6 max-w-5xl mx-auto"
+      >
         {/* Back Link */}
         <Link href="/discover" className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors">
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -403,7 +423,7 @@ export default function SkillDetail() {
             </Card>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* MODAL 1: REQUEST FREE SWAP */}
       <Dialog

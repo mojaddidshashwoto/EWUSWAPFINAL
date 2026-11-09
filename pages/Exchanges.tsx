@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { LeaveReviewModal } from "@/components/LeaveReviewModal";
 import { listMyEscrowTransactions, openEscrowDispute, releaseEscrowByPayer, submitEscrowProof, supabase, updateEscrowMeetingDetails } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { motion, useReducedMotion } from "framer-motion";
 
 interface ExchangeItem {
   id: string;
@@ -114,9 +115,20 @@ const SAMPLE_EXCHANGES: ExchangeItem[] = [
   },
 ];
 
+const exchangeListVariants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.07 } },
+};
+
+const exchangeCardVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.24 } },
+};
+
 export default function ExchangesPage() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const reducedMotion = useReducedMotion();
   const [exchanges, setExchanges] = useState<ExchangeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [disputeModalOpen, setDisputeModalOpen] = useState(false);
@@ -285,18 +297,34 @@ export default function ExchangesPage() {
       return (
         <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-center py-12">
           <CardContent className="space-y-2">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {isLoading ? "Loading exchanges..." : emptyMessage}
-            </p>
+            {isLoading ? (
+              <div className="flex flex-col items-center gap-2 text-xs text-slate-500 dark:text-slate-400" role="status" aria-live="polite">
+                <motion.div
+                  animate={reducedMotion ? undefined : { rotate: 360 }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                >
+                  <RefreshCw className="h-4 w-4 text-indigo-500" />
+                </motion.div>
+                <span>Loading exchanges...</span>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400">{emptyMessage}</p>
+            )}
           </CardContent>
         </Card>
       );
     }
 
     return (
-      <div className="space-y-4">
+      <motion.div
+        variants={exchangeListVariants}
+        initial={reducedMotion ? false : "hidden"}
+        animate={reducedMotion ? undefined : "visible"}
+        className="space-y-4"
+      >
         {list.map((ex) => (
-          <Card key={ex.id} className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+          <motion.div key={ex.id} variants={exchangeCardVariants}>
+          <Card className="bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
             <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary" className="text-[10px]">
@@ -522,14 +550,20 @@ export default function ExchangesPage() {
               </CardFooter>
             )}
           </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     );
   };
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <motion.div
+        initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reducedMotion ? 0 : 0.32 }}
+        className="space-y-6 max-w-5xl mx-auto"
+      >
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -562,7 +596,7 @@ export default function ExchangesPage() {
           <TabsContent value="completed">{renderExchangeCards("completed")}</TabsContent>
           <TabsContent value="disputed">{renderExchangeCards("disputed")}</TabsContent>
         </Tabs>
-      </div>
+      </motion.div>
 
       {/* DISPUTE MODAL */}
       <Dialog open={disputeModalOpen} onOpenChange={setDisputeModalOpen}>

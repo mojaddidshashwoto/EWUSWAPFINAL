@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { toast } from "sonner";
 import { Link, useLocation } from "wouter";
 import type { LucideIcon } from "lucide-react";
@@ -83,6 +84,7 @@ const MOBILE_CORE_ITEMS = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [location, setLocation] = useLocation();
+  const shouldReduceMotion = useReducedMotion();
   const { user: authUser, isLoading: isAuthLoading, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -223,17 +225,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Link
                 key={item.path}
                 href={item.path}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                className={`relative isolate flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                   active
                     ? isSpecialAdmin
-                      ? "bg-rose-500/20 text-rose-300 border border-rose-500/30 shadow-[0_0_20px_rgba(244,63,94,0.3)]"
-                      : "bg-white/[0.08] text-white border border-white/15 shadow-[0_0_25px_rgba(99,102,241,0.25)]"
+                      ? "text-rose-300 border border-rose-500/30"
+                      : "text-white border border-white/15"
                     : isSpecialAdmin
                     ? "text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
                     : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"
                 }`}
               >
-                <div className="flex items-center gap-3">
+                {active && (
+                  <motion.span
+                    layoutId="dashboard-active-navigation"
+                    transition={shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }}
+                    className={`absolute inset-0 z-0 rounded-xl ${isSpecialAdmin ? "bg-rose-500/20 shadow-[0_0_20px_rgba(244,63,94,0.3)]" : "bg-white/[0.08] shadow-[0_0_25px_rgba(99,102,241,0.25)]"}`}
+                  />
+                )}
+                <div className="relative z-10 flex items-center gap-3">
                   <IconComponent
                     className={`w-4 h-4 ${
                       active
@@ -243,7 +252,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         : "text-zinc-400"
                     }`}
                   />
-                  <span>{item.label}</span>
+                  <motion.span whileHover={shouldReduceMotion ? undefined : { x: 2 }} transition={{ duration: 0.18 }}>{item.label}</motion.span>
                 </div>
                 {item.badge && (
                   <span
@@ -351,15 +360,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             : isSpecialAdmin
                             ? "text-rose-400 hover:bg-rose-500/10"
                             : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"
-                        }`}
+                        } relative isolate`}
                       >
-                        <div className="flex items-center gap-3">
+                        {active && (
+                          <motion.span
+                            layoutId="mobile-dashboard-active-navigation"
+                            transition={shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 34 }}
+                            className={`absolute inset-0 z-0 rounded-xl ${isSpecialAdmin ? "bg-rose-500/20" : "bg-white/[0.08]"}`}
+                          />
+                        )}
+                        <div className="relative z-10 flex items-center gap-3">
                           <IconComponent className="w-4 h-4" />
                           <span>{item.label}</span>
                         </div>
                         {item.badge && (
                           <span
-                            className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                            className={`relative z-10 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
                               isSpecialAdmin ? "bg-rose-950 text-rose-300" : "bg-indigo-950 text-indigo-300"
                             }`}
                           >

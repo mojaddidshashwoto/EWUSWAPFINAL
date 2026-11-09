@@ -5,6 +5,7 @@ import { Button, MagneticButton } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { motion, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
 
 export interface SkillCardProps {
   id: string;
@@ -52,8 +53,25 @@ export function SkillCard({
   className,
 }: SkillCardProps) {
   const { user } = useAuth();
+  const shouldReduceMotion = useReducedMotion();
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+  const springTiltX = useSpring(tiltX, { stiffness: 220, damping: 22, mass: 0.35 });
+  const springTiltY = useSpring(tiltY, { stiffness: 220, damping: 22, mass: 0.35 });
   const isOwner = isOwnerProp ?? Boolean(authorId && user?.id && authorId === user.id);
   const isOnCampus = deliveryMode === "on_campus" || deliveryMode === "On-Campus" || deliveryMode === "Offline";
+  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (shouldReduceMotion || event.pointerType !== "mouse") return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+    const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+    tiltX.set(-y * 2.5);
+    tiltY.set(x * 2.5);
+  };
+  const resetTilt = () => {
+    tiltX.set(0);
+    tiltY.set(0);
+  };
   const details = (
     <div className="flex flex-1 flex-col">
       {/* Header Badges */}
@@ -117,6 +135,12 @@ export function SkillCard({
   );
 
   return (
+    <motion.div
+      onPointerMove={handlePointerMove}
+      onPointerLeave={resetTilt}
+      style={shouldReduceMotion ? undefined : { rotateX: springTiltX, rotateY: springTiltY, transformPerspective: 900 }}
+      className="h-full min-w-0"
+    >
     <Card className={cn("group flex h-full w-full min-w-0 flex-col overflow-hidden border-white/10 bg-white/[0.025] backdrop-blur-3xl shadow-xl transition-all duration-300 hover:-translate-y-2 hover:border-white/25 hover:shadow-[0_25px_50px_-10px_rgba(99,102,241,0.35),0_0_25px_rgba(16,185,129,0.2)] relative will-change-transform", className)}>
       {detailsHref ? (
         <Link href={detailsHref} className="flex flex-1 flex-col transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
@@ -158,5 +182,6 @@ export function SkillCard({
         )}
       </div>
     </Card>
+    </motion.div>
   );
 }

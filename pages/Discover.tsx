@@ -422,17 +422,20 @@ export default function Discover() {
           {CATEGORIES.map((cat) => {
             const active = selectedCategory === cat;
             return (
-              <button
+              <motion.button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`text-xs px-3.5 py-1.5 rounded-full font-semibold transition-all shrink-0 ${
+                aria-pressed={active}
+                whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+                className={`relative isolate text-xs px-3.5 py-1.5 rounded-full font-semibold transition-colors shrink-0 ${
                   active
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                    ? "text-white shadow-md shadow-indigo-600/20"
                     : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
               >
-                {cat}
-              </button>
+                {active && <motion.span layoutId="discover-category-highlight" className="absolute inset-0 -z-10 rounded-full bg-indigo-600" transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: motionEase }} />}
+                <span className="relative">{cat}</span>
+              </motion.button>
             );
           })}
         </div>
