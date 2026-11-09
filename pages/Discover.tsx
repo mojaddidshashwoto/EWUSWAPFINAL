@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import DashboardLayout from "@/components/DashboardLayout";
 import { SkillCard, SkillCardProps } from "@/components/SkillCard";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { createSkillSwapListing, listPublishedSkillCourses, supabase } from "@/lib/supabase";
+import { motionEase } from "@/lib/motion";
 
 const SAMPLE_LISTINGS: (SkillCardProps & {
   format: "Online" | "Offline" | "Both";
@@ -138,6 +140,7 @@ const CATEGORIES = ["All", "Arts", "Business", "Career", "Design", "Finance", "L
 
 export default function Discover() {
   const [, setLocation] = useLocation();
+  const shouldReduceMotion = useReducedMotion();
   const [publishedListings, setPublishedListings] = useState<typeof SAMPLE_LISTINGS>([]);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [isPublishOpen, setIsPublishOpen] = useState(false);
@@ -536,15 +539,26 @@ export default function Discover() {
           {/* GRID OF SKILL CARDS */}
           <div className="md:col-span-3">
             {filteredListings.length > 0 ? (
-              <div className="stagger-children grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5">
-                {filteredListings.map((skill) => (
-                  <SkillCard
-                    key={skill.id}
-                    {...skill}
-                    detailsHref={`/exchanges/${skill.id}`}
-                    onBook={handleBook}
-                  />
-                ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+                <AnimatePresence initial={false} mode="popLayout">
+                  {filteredListings.map((skill, index) => (
+                    <motion.div
+                      key={skill.id}
+                      layout
+                      initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                      transition={{ duration: shouldReduceMotion ? 0 : 0.28, delay: shouldReduceMotion ? 0 : Math.min(index * 0.035, 0.18), ease: motionEase }}
+                      className="min-w-0 h-full"
+                    >
+                      <SkillCard
+                        {...skill}
+                        detailsHref={`/exchanges/${skill.id}`}
+                        onBook={handleBook}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             ) : (
               /* EMPTY STATE */

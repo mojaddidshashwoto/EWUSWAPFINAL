@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Route, Switch, useLocation } from "wouter";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { pageVariants } from "./lib/motion";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -96,8 +98,21 @@ function RootRoute() {
 }
 
 function Router() {
+  const [location] = useLocation();
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <Switch>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location}
+        variants={pageVariants}
+        initial={shouldReduceMotion ? false : "initial"}
+        animate="animate"
+        exit="exit"
+        transition={{ duration: shouldReduceMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
+        className="min-h-screen"
+      >
+    <Switch location={location}>
       {/* Root Route: Dynamic switch based on auth */}
       <Route path="/" component={RootRoute} />
 
@@ -130,6 +145,8 @@ function Router() {
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 

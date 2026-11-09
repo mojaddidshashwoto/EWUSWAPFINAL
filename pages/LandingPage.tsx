@@ -20,6 +20,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import { Badge } from "@/components/ui/badge";
+import { motion, useReducedMotion } from "framer-motion";
+import { motionEase, revealItemVariants, staggerVariants } from "@/lib/motion";
 
 const TOP_SKILLS = [
   {
@@ -67,12 +69,19 @@ const TOP_SKILLS = [
 ];
 
 export default function LandingPage() {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
       {/* ========================================================================= */}
       {/* 1. PUBLIC TOP NAVIGATION */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-8 py-3.5">
+      <motion.header
+        initial={shouldReduceMotion ? false : { opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.45, ease: motionEase }}
+        className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800/80 px-4 sm:px-8 py-3.5"
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
             <Logo size="md" tone="light" tagline className="transition-transform duration-300 group-hover:scale-[1.02]" />
@@ -80,16 +89,16 @@ export default function LandingPage() {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-300">
-            <Link href="/discover" className="hover:text-white transition-colors">
+            <Link href="/discover" className="landing-nav-link hover:text-white transition-colors">
               Discover Skills
             </Link>
-            <a href="#how-it-works" className="hover:text-white transition-colors">
+            <a href="#how-it-works" className="landing-nav-link hover:text-white transition-colors">
               How It Works
             </a>
-            <a href="#escrow-safety" className="hover:text-white transition-colors">
+            <a href="#escrow-safety" className="landing-nav-link hover:text-white transition-colors">
               Escrow Protection
             </a>
-            <a href="#community" className="hover:text-white transition-colors">
+            <a href="#community" className="landing-nav-link hover:text-white transition-colors">
               Campus Proof
             </a>
           </nav>
@@ -116,37 +125,42 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* ========================================================================= */}
       {/* 2. HERO SECTION */}
       {/* ========================================================================= */}
-      <section className="relative pt-16 pb-20 md:pt-24 md:pb-32 px-4 sm:px-8 overflow-hidden">
+      <motion.section
+        initial={shouldReduceMotion ? false : "hidden"}
+        animate={shouldReduceMotion ? undefined : "visible"}
+        variants={shouldReduceMotion ? undefined : staggerVariants}
+        className="relative pt-16 pb-20 md:pt-24 md:pb-32 px-4 sm:px-8 overflow-hidden"
+      >
         {/* Glow Spheres */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-10 left-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute top-20 right-10 w-80 h-80 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-indigo-600/15 rounded-full blur-[120px] pointer-events-none animate-float-1" />
+        <div className="absolute bottom-10 left-10 w-72 h-72 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none animate-float-2" />
+        <div className="absolute top-20 right-10 w-80 h-80 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none animate-float-3" />
 
-        <div className="max-w-5xl mx-auto text-center space-y-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-semibold backdrop-blur-xs">
+        <motion.div variants={shouldReduceMotion ? undefined : staggerVariants} className="max-w-5xl mx-auto text-center space-y-6 relative z-10">
+          <motion.div variants={shouldReduceMotion ? undefined : revealItemVariants} transition={{ duration: shouldReduceMotion ? 0 : 0.55, ease: motionEase }} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 text-xs font-semibold backdrop-blur-xs">
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             <span>The Peer-Powered Campus Knowledge Exchange</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          </div>
+          </motion.div>
 
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.08]">
+          <motion.h1 variants={shouldReduceMotion ? undefined : revealItemVariants} transition={{ duration: shouldReduceMotion ? 0 : 0.65, ease: motionEase }} className="text-4xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.08]">
             Teach what you know. <br className="hidden sm:inline" />
             <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-emerald-400 bg-clip-text text-transparent">
               Learn what you love.
             </span>
-          </h1>
+          </motion.h1>
 
-          <p className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
+          <motion.p variants={shouldReduceMotion ? undefined : revealItemVariants} transition={{ duration: shouldReduceMotion ? 0 : 0.55, ease: motionEase }} className="text-slate-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
             East West University's student-to-student marketplace. Trade knowledge with fellow peers for free or book escrow-protected sessions using <strong>Skill Credits</strong> and <strong>BDT (৳)</strong>.
-          </p>
+          </motion.p>
 
           {/* Call to Actions */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+          <motion.div variants={shouldReduceMotion ? undefined : revealItemVariants} transition={{ duration: shouldReduceMotion ? 0 : 0.55, ease: motionEase }} className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
             <Link href="/signup">
               <Button
                 size="lg"
@@ -165,10 +179,10 @@ export default function LandingPage() {
                 Explore Skills
               </Button>
             </Link>
-          </div>
+          </motion.div>
 
           {/* Quick Trust Signals */}
-          <div className="pt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 font-medium">
+          <motion.div variants={shouldReduceMotion ? undefined : revealItemVariants} transition={{ duration: shouldReduceMotion ? 0 : 0.55, ease: motionEase }} className="pt-6 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 font-medium">
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Verified Student ID Required
             </span>
@@ -178,14 +192,14 @@ export default function LandingPage() {
             <span className="flex items-center gap-1.5">
               <Coins className="w-4 h-4 text-amber-400" /> Instant bKash & Nagad Cashout
             </span>
-          </div>
-        </div>
-      </section>
+          </motion.div>
+        </motion.div>
+      </motion.section>
 
       {/* ========================================================================= */}
       {/* 4. HOW IT WORKS: DUAL-CURRENCY & ESCROW SAFETY */}
       {/* ========================================================================= */}
-      <section id="how-it-works" className="py-20 md:py-28 px-4 sm:px-8 max-w-7xl mx-auto w-full">
+      <motion.section id="how-it-works" initial={shouldReduceMotion ? false : "hidden"} whileInView={shouldReduceMotion ? undefined : "visible"} viewport={{ once: true, amount: 0.12 }} variants={revealItemVariants} transition={{ duration: shouldReduceMotion ? 0 : 0.65, ease: motionEase }} className="py-20 md:py-28 px-4 sm:px-8 max-w-7xl mx-auto w-full">
         <div className="text-center max-w-2xl mx-auto space-y-3 mb-16">
           <Badge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[10px] uppercase font-bold tracking-wider">
             Architecture & Mechanics
@@ -243,12 +257,12 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
       {/* 5. TOP PEER SKILLS PREVIEW */}
       {/* ========================================================================= */}
-      <section className="py-16 bg-slate-950/80 border-t border-slate-800/80 px-4 sm:px-8">
+      <motion.section id="community" initial={shouldReduceMotion ? false : "hidden"} whileInView={shouldReduceMotion ? undefined : "visible"} viewport={{ once: true, amount: 0.1 }} variants={revealItemVariants} transition={{ duration: shouldReduceMotion ? 0 : 0.65, ease: motionEase }} className="py-16 bg-slate-950/80 border-t border-slate-800/80 px-4 sm:px-8">
         <div className="max-w-7xl mx-auto space-y-10">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
@@ -326,12 +340,12 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
       {/* 6. CALL TO ACTION BANNER */}
       {/* ========================================================================= */}
-      <section className="py-20 px-4 sm:px-8">
+      <motion.section initial={shouldReduceMotion ? false : "hidden"} whileInView={shouldReduceMotion ? undefined : "visible"} viewport={{ once: true, amount: 0.15 }} variants={revealItemVariants} transition={{ duration: shouldReduceMotion ? 0 : 0.65, ease: motionEase }} className="py-20 px-4 sm:px-8">
         <div className="max-w-5xl mx-auto rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-950 to-slate-900 border border-indigo-800/50 p-8 sm:p-14 text-center space-y-6 relative overflow-hidden shadow-2xl">
           <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -365,7 +379,7 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ========================================================================= */}
       {/* 7. PRODUCTION FOOTER */}
