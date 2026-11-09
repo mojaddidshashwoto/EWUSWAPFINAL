@@ -20,8 +20,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
 import { Badge } from "@/components/ui/badge";
-import { motion, useReducedMotion } from "framer-motion";
+import { useCallback, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { motionEase, revealItemVariants, staggerVariants } from "@/lib/motion";
+import { BrandIntro, shouldPlayBrandIntro } from "@/components/BrandIntro";
 
 const TOP_SKILLS = [
   {
@@ -70,9 +72,21 @@ const TOP_SKILLS = [
 
 export default function LandingPage() {
   const shouldReduceMotion = useReducedMotion();
+  const [introPlaying, setIntroPlaying] = useState(shouldPlayBrandIntro);
+  const [landingVisible, setLandingVisible] = useState(!introPlaying);
+  const revealLanding = useCallback(() => setLandingVisible(true), []);
+  const finishIntro = useCallback(() => setIntroPlaying(false), []);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
+    <>
+    <motion.div
+      animate={{ opacity: landingVisible ? 1 : 0 }}
+      transition={{ duration: shouldReduceMotion ? 0 : 0.85, ease: motionEase }}
+      aria-hidden={introPlaying}
+      inert={introPlaying}
+      className="min-h-screen bg-slate-900 text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white"
+      style={{ pointerEvents: introPlaying ? "none" : "auto" }}
+    >
       {/* ========================================================================= */}
       {/* 1. PUBLIC TOP NAVIGATION */}
       {/* ========================================================================= */}
@@ -481,6 +495,10 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
+    </motion.div>
+    <AnimatePresence>
+      {introPlaying && <BrandIntro onReveal={revealLanding} onFinish={finishIntro} />}
+    </AnimatePresence>
+    </>
   );
 }
